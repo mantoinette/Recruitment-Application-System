@@ -10,6 +10,7 @@ import HrDashboard from "./pages/hr/Dashboard";
 import AdminDashboard from "./pages/admin/Dashboard";
 import ApplicationForm from "./pages/applicant/ApplicationForm";
 
+
 function App() {
 
     return (

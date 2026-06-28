@@ -8,7 +8,7 @@ function Login() {
 
     const navigate = useNavigate();
     const [message, setMessage] = useState("");
-    const [loading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [loginData, setLoginData] = useState({
         email: "",
@@ -24,6 +24,7 @@ function Login() {
 
     const loginUser = async (event) => {
         event.preventDefault();
+
         setMessage("");
         setLoading(true);
 
@@ -32,24 +33,33 @@ function Login() {
 
             const loggedInUser = response.data;
 
+            // save user in local storage
             localStorage.setItem("user", JSON.stringify(loggedInUser));
 
-            // ROLE-BASED REDIRECT
-            const role = loggedInUser.role?.toUpperCase();
+            const email = loggedInUser.email?.toLowerCase();
 
-            if (role === "ADMIN") {
-                navigate("/admin/dashboard");
-            } else if (role === "HR") {
-                navigate("/hr/dashboard");
-            } else {
-                navigate("/applicant/dashboard");
+            // DEFAULT ROUTE = applicant
+            let route = "/applicant/dashboard";
+
+            // ROLE BASED ON EMAIL (your requirement)
+            if (email === "admin@gmail.com") {
+                route = "/admin/dashboard";
+            }
+            else if (email === "hr@gmail.com") {
+                route = "/hr/dashboard";
             }
 
+            navigate(route);
+
         } catch (error) {
+
+            console.error("Login error:", error);
+
             const errorMessage =
-                error.response?.data || "Invalid credentials";
+                error.response?.data || "Invalid email or password";
 
             setMessage(errorMessage);
+
         } finally {
             setLoading(false);
         }

@@ -1,0 +1,160 @@
+/* =========================
+   HR DASHBOARD STYLES
+   (clean + production-ready)
+========================= */
+
+/* ===== BRAND ===== */
+.app-sidebar .brand-subtitle {
+    color: #a9b7c9;
+    font-size: 13px;
+}
+
+/* ===== SIDEBAR NAV ===== */
+.app-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #cbd6e2;
+    text-decoration: none;
+    padding: 11px 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: 0.2s ease;
+}
+
+.app-nav a:hover {
+    background: #20354f;
+    color: #ffffff;
+}
+
+/* ACTIVE LINK */
+.app-nav a.active {
+    background: #20354f;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* ===== TOPBAR ===== */
+.topbar {
+    background: #ffffff;
+}
+
+.topbar-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #172033;
+}
+
+/* HR avatar */
+.avatar {
+    background: #16a34a;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 35px rgba(20, 31, 49, 0.10);
+}
+
+.stat-value {
+    letter-spacing: -0.5px;
+}
+
+/* ===== PANEL ===== */
+.panel {
+    transition: all 0.2s ease;
+}
+
+.panel:hover {
+    box-shadow: 0 14px 35px rgba(20, 31, 49, 0.08);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== STATUS LIST ===== */
+.status-item {
+    transition: 0.2s ease;
+}
+
+.status-item:hover {
+    border-color: #cfd8e3;
+    background: #fafbff;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.badge.pending {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.badge.approved {
+    color: #065f46;
+    background: #d1fae5;
+}
+
+.badge.rejected {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+/* ===== STEPS ===== */
+.step-row {
+    padding: 6px 0;
+}
+
+.step-number {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+/* ===== BUTTONS ===== */
+.primary-button {
+    background: #16a34a;
+}
+
+.primary-button:hover {
+    background: #15803d;
+}
+
+.secondary-button {
+    background: #eef3fb;
+    color: #24415f;
+}
+
+.secondary-button:hover {
+    background: #e2e8f0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .panel-title {
+        font-size: 16px;
+    }
+
+    .app-sidebar {
+        width: 100%;
+    }
+
+    .app-nav {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+}
