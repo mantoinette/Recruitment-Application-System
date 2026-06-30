@@ -83,8 +83,8 @@ public class AuthService {
                 )
         );
 
-        // Every registered user becomes Applicant
-        user.setRole(Role.APPLICANT);
+        // Assign selected role (defaults to applicant)
+        user.setRole(request.getRole() == null ? Role.APPLICANT : request.getRole());
 
         // Save into database
         return userRepository.save(user);

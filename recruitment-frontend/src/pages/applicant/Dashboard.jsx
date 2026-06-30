@@ -1,39 +1,58 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight, FiCheckCircle, FiClock, FiFileText, FiXCircle } from "react-icons/fi";
+import { FiArrowRight, FiBriefcase, FiCheckCircle, FiClock } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import StatBarChart from "../../components/StatBarChart";
+import ActivityFeed from "../../components/ActivityFeed";
+import { getUser } from "../../utils/auth";
 
 function Dashboard() {
+    const user = getUser() || {};
     const [applications, setApplications] = useState([]);
-    const user = useMemo(() => JSON.parse(localStorage.getItem("user") || "{}"), []);
+    const [profileComplete, setProfileComplete] = useState(false);
 
     useEffect(() => {
-        const loadApplications = async () => {
+        const loadData = async () => {
+            if (!user.id) {
+                return;
+            }
+
             try {
-                const response = await api.get("/applications");
-                const allApplications = Array.isArray(response.data) ? response.data : [];
-                const ownApplications = allApplications.filter((application) => {
-                    if (!user.id) {
-                        return false;
-                    }
+                const [appsResponse, profileStatus] = await Promise.all([
+                    api.get(`/applications/user/${user.id}`),
+                    api.get(`/profile/${user.id}/status`)
+                ]);
 
-                    return application.user?.id === user.id;
-                });
-
-                setApplications(ownApplications);
+                setApplications(Array.isArray(appsResponse.data) ? appsResponse.data : []);
+                setProfileComplete(Boolean(profileStatus.data.profileComplete));
             } catch (error) {
-                console.error("Failed to load applications", error);
+                console.error("Failed to load dashboard", error);
             }
         };
 
-        loadApplications();
+        loadData();
     }, [user.id]);
 
     const total = applications.length;
-    const pending = applications.filter((application) => application.status === "PENDING").length;
-    const approved = applications.filter((application) => application.status === "APPROVED").length;
-    const rejected = applications.filter((application) => application.status === "REJECTED").length;
+    const pending = applications.filter((a) => a.status === "PENDING").length;
+    const approved = applications.filter((a) => a.status === "APPROVED").length;
+    const rejected = applications.filter((a) => a.status === "REJECTED").length;
+
+    const chartItems = [
+        { label: "Pending", value: pending, color: "#f59e0b" },
+        { label: "Approved", value: approved, color: "#16a34a" },
+        { label: "Rejected", value: rejected, color: "#dc2626" }
+    ];
+
+    const activities = applications.slice(0, 5).map((app) => ({
+        id: app.id,
+        title: app.positionApplied || app.job?.title || `Application #${app.id}`,
+        subtitle: "Your submitted application",
+        status: app.status,
+        statusClass: (app.status || "PENDING").toLowerCase(),
+        color: "#2563eb"
+    }));
 
     return (
         <ApplicantLayout title="Applicant Dashboard">
@@ -43,75 +62,68 @@ function Dashboard() {
                         <div className="page-kicker">Overview</div>
                         <h1 className="page-title">Welcome back, {user.fullName || "Applicant"}</h1>
                         <p className="page-copy">
-                            Track your application progress, keep your profile ready, and submit your details for review.
+                            Complete your profile, browse vacancies, and track your applications.
                         </p>
                     </div>
-
-                    <Link className="primary-button" to="/applicant/apply">
-                        New application <FiArrowRight />
+                    <Link className="primary-button" to="/">
+                        Browse jobs <FiArrowRight />
                     </Link>
                 </div>
 
+                {!profileComplete && (
+                    <div className="alert-banner">
+                        <FiClock />
+                        <div>
+                            <strong>Complete your profile before applying.</strong>
+                            <div className="muted">Personal info, education, skills, and documents are required.</div>
+                        </div>
+                        <Link className="secondary-button" to="/applicant/profile">Complete profile</Link>
+                    </div>
+                )}
+
                 <div className="grid stats-grid">
+                    <div className="stat-card highlight">
+                        <div className="stat-label">Profile status</div>
+                        <div className="stat-value small">{profileComplete ? "Complete" : "Incomplete"}</div>
+                    </div>
                     <div className="stat-card">
-                        <div className="stat-label">Total applications</div>
+                        <div className="stat-label">Applications</div>
                         <div className="stat-value">{total}</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-label">Pending review</div>
+                        <div className="stat-label">Pending</div>
                         <div className="stat-value">{pending}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">Approved</div>
                         <div className="stat-value">{approved}</div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-label">Rejected</div>
-                        <div className="stat-value">{rejected}</div>
-                    </div>
                 </div>
 
                 <div className="grid two-column">
                     <div className="panel">
-                        <h2 className="panel-title">Application steps</h2>
-                        <div className="steps">
-                            <div className="step-row">
-                                <div className="step-number"><FiFileText /></div>
-                                <div>
-                                    <div className="step-title">Submit your application</div>
-                                    <div className="muted">Provide contact, education, and work experience details.</div>
-                                </div>
-                            </div>
-                            <div className="step-row">
-                                <div className="step-number"><FiClock /></div>
-                                <div>
-                                    <div className="step-title">Wait for HR review</div>
-                                    <div className="muted">Your status remains pending while the HR team reviews it.</div>
-                                </div>
-                            </div>
-                            <div className="step-row">
-                                <div className="step-number"><FiCheckCircle /></div>
-                                <div>
-                                    <div className="step-title">Check the decision</div>
-                                    <div className="muted">Approved and rejected outcomes appear on the status page.</div>
-                                </div>
-                            </div>
-                        </div>
+                        <h2 className="panel-title">Application breakdown</h2>
+                        <StatBarChart items={chartItems} />
                     </div>
 
                     <div className="panel">
-                        <h2 className="panel-title">Quick actions</h2>
-                        <div className="steps">
-                            <Link className="secondary-button" to="/applicant/status">
-                                <FiClock /> View status
-                            </Link>
-                            <Link className="secondary-button" to="/applicant/profile">
-                                <FiCheckCircle /> Review profile
-                            </Link>
-                            <Link className="secondary-button" to="/applicant/apply">
-                                <FiXCircle /> Update application
-                            </Link>
-                        </div>
+                        <h2 className="panel-title">Recent activity</h2>
+                        <ActivityFeed items={activities} />
+                    </div>
+                </div>
+
+                <div className="panel quick-links-panel">
+                    <h2 className="panel-title">Quick actions</h2>
+                    <div className="quick-links">
+                        <Link className="quick-link-card" to="/applicant/profile">
+                            <FiCheckCircle /> Update profile
+                        </Link>
+                        <Link className="quick-link-card" to="/applicant/status">
+                            <FiClock /> View status
+                        </Link>
+                        <Link className="quick-link-card" to="/">
+                            <FiBriefcase /> Browse vacancies
+                        </Link>
                     </div>
                 </div>
             </section>

@@ -1,182 +1,105 @@
-import { FiUsers, FiBriefcase, FiCalendar, FiFileText } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FiArrowRight } from "react-icons/fi";
+import api from "../../api/axios";
+import AdminLayout from "../../layouts/AdminLayout";
+import StatBarChart from "../../components/StatBarChart";
+import ActivityFeed from "../../components/ActivityFeed";
 
 function Dashboard() {
+    const [stats, setStats] = useState(null);
+    const [applications, setApplications] = useState([]);
+
+    useEffect(() => {
+        const loadDashboard = async () => {
+            try {
+                const [statsResponse, applicationsResponse] = await Promise.all([
+                    api.get("/stats"),
+                    api.get("/applications/hr/latest")
+                ]);
+
+                setStats(statsResponse.data);
+                setApplications(Array.isArray(applicationsResponse.data) ? applicationsResponse.data.slice(0, 6) : []);
+            } catch (error) {
+                console.error("Failed to load admin dashboard", error);
+            }
+        };
+
+        loadDashboard();
+    }, []);
+
+    const userChart = [
+        { label: "Applicants", value: stats?.applicantUsers ?? 0, color: "#2563eb" },
+        { label: "HR", value: stats?.hrUsers ?? 0, color: "#16a34a" },
+        { label: "Admins", value: stats?.adminUsers ?? 0, color: "#7c3aed" }
+    ];
+
+    const activities = applications.map((app) => ({
+        id: app.id,
+        title: app.user?.fullName || "Applicant",
+        subtitle: app.positionApplied || "Application submitted",
+        status: app.status,
+        statusClass: (app.status || "PENDING").toLowerCase(),
+        color: "#7c3aed"
+    }));
 
     return (
-
-        <div className="app-shell">
-
-            {/* SIDEBAR (reuse same style system) */}
-            <aside className="app-sidebar">
-
-                <div className="brand-block">
-                    <h2 className="brand-title">Recruitment</h2>
-                    <div className="brand-subtitle">Admin Panel</div>
+        <AdminLayout title="Admin Dashboard">
+            <div className="page">
+                <div className="page-header">
+                    <div>
+                        <div className="page-kicker">System Overview</div>
+                        <h1 className="page-title">Administration dashboard</h1>
+                        <p className="page-copy">
+                            Monitor platform activity, user distribution, and recruitment performance.
+                        </p>
+                    </div>
+                    <Link className="primary-button" to="/admin/users">
+                        Manage users <FiArrowRight />
+                    </Link>
                 </div>
 
-                <nav className="app-nav">
-                    <a className="active">Dashboard</a>
-                    <a>Applicants</a>
-                    <a>Jobs</a>
-                    <a>Interviews</a>
-                    <a>Users</a>
-                    <a>Reports</a>
-                </nav>
-
-                <button className="logout-link">
-                    Logout
-                </button>
-
-            </aside>
-
-            {/* MAIN */}
-            <main className="app-main">
-
-                {/* TOP BAR */}
-                <header className="topbar">
-
-                    <div className="topbar-title">
-                        Admin Dashboard
+                <div className="grid stats-grid">
+                    <div className="stat-card highlight">
+                        <div className="stat-label">Total users</div>
+                        <div className="stat-value">{stats?.totalUsers ?? 0}</div>
                     </div>
-
-                    <div className="topbar-user">
-
-                        <div className="avatar">A</div>
-
-                        <div>
-                            <div className="user-name">Admin User</div>
-                            <div className="user-role">administrator</div>
-                        </div>
-
+                    <div className="stat-card">
+                        <div className="stat-label">Open jobs</div>
+                        <div className="stat-value">{stats?.openJobs ?? 0}</div>
                     </div>
-
-                </header>
-
-                {/* PAGE CONTENT */}
-                <div className="page">
-
-                    {/* HEADER */}
-                    <div className="page-header">
-
-                        <div>
-                            <div className="page-kicker">Overview</div>
-                            <h1 className="page-title">Welcome back, Admin</h1>
-                            <p className="page-copy">
-                                Manage applicants, job postings, interviews, and system activity.
-                            </p>
-                        </div>
-
+                    <div className="stat-card">
+                        <div className="stat-label">Applications</div>
+                        <div className="stat-value">{stats?.totalApplications ?? 0}</div>
                     </div>
-
-                    {/* STATS */}
-                    <div className="grid stats-grid">
-
-                        <div className="stat-card">
-                            <div className="stat-label">Total Applicants</div>
-                            <div className="stat-value">120</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-label">Open Jobs</div>
-                            <div className="stat-value">15</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-label">Interviews</div>
-                            <div className="stat-value">45</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-label">New Applications</div>
-                            <div className="stat-value">8</div>
-                        </div>
-
+                    <div className="stat-card">
+                        <div className="stat-label">Approved</div>
+                        <div className="stat-value">{stats?.approvedApplications ?? 0}</div>
                     </div>
-
-                    {/* TWO COLUMN SECTION */}
-                    <div className="grid two-column">
-
-                        {/* LEFT PANEL */}
-                        <div className="panel">
-
-                            <h2 className="panel-title">
-                                Recent Applications
-                            </h2>
-
-                            <div className="status-list">
-
-                                <div className="status-item">
-                                    <div>
-                                        <strong>John Doe</strong>
-                                        <div className="muted">Software Engineer</div>
-                                    </div>
-                                    <span className="badge pending">Pending</span>
-                                </div>
-
-                                <div className="status-item">
-                                    <div>
-                                        <strong>Jane Smith</strong>
-                                        <div className="muted">Backend Developer</div>
-                                    </div>
-                                    <span className="badge approved">Interview</span>
-                                </div>
-
-                                <div className="status-item">
-                                    <div>
-                                        <strong>Peter Johnson</strong>
-                                        <div className="muted">UI/UX Designer</div>
-                                    </div>
-                                    <span className="badge approved">Accepted</span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        {/* RIGHT PANEL */}
-                        <div className="panel">
-
-                            <h2 className="panel-title">
-                                Quick Actions
-                            </h2>
-
-                            <div className="steps">
-
-                                <div className="step-row">
-                                    <div className="step-number">1</div>
-                                    <div>
-                                        <div className="step-title">Add New Job</div>
-                                        <div className="muted">Create job postings for applicants</div>
-                                    </div>
-                                </div>
-
-                                <div className="step-row">
-                                    <div className="step-number">2</div>
-                                    <div>
-                                        <div className="step-title">Review Applications</div>
-                                        <div className="muted">Check incoming applications</div>
-                                    </div>
-                                </div>
-
-                                <div className="step-row">
-                                    <div className="step-number">3</div>
-                                    <div>
-                                        <div className="step-title">Schedule Interviews</div>
-                                        <div className="muted">Manage interview process</div>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
                 </div>
 
-            </main>
+                <div className="grid two-column">
+                    <div className="panel">
+                        <h2 className="panel-title">User distribution</h2>
+                        <StatBarChart items={userChart} />
+                    </div>
 
-        </div>
+                    <div className="panel">
+                        <h2 className="panel-title">Recent platform activity</h2>
+                        <ActivityFeed items={activities} />
+                    </div>
+                </div>
+
+                <div className="panel quick-links-panel">
+                    <h2 className="panel-title">Quick access</h2>
+                    <div className="quick-links">
+                        <Link className="quick-link-card" to="/admin/users">Manage users</Link>
+                        <Link className="quick-link-card" to="/">View public vacancies</Link>
+                        <Link className="quick-link-card" to="/hr/reports">Recruitment reports</Link>
+                    </div>
+                </div>
+            </div>
+        </AdminLayout>
     );
 }
 

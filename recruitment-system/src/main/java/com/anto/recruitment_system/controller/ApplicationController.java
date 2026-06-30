@@ -2,13 +2,11 @@ package com.anto.recruitment_system.controller;
 
 import com.anto.recruitment_system.entity.Application;
 import com.anto.recruitment_system.service.ApplicationService;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/applications")
@@ -20,66 +18,63 @@ public class ApplicationController {
         this.applicationService = applicationService;
     }
 
-    // Create application
-    @PostMapping
-    public Application submitApplication(@RequestBody Application application) {
-        return applicationService.submitApplication(application);
+    @PostMapping("/apply")
+    public Application applyForJob(@RequestBody Map<String, Long> request) {
+        Long userId = request.get("userId");
+        Long jobId = request.get("jobId");
+
+        if (userId == null || jobId == null) {
+            throw new IllegalArgumentException("User ID and Job ID are required");
+        }
+
+        return applicationService.applyForJob(userId, jobId);
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Application submitApplicationWithCv(
-            @RequestParam Long userId,
-            @RequestParam String phone,
-            @RequestParam String address,
-            @RequestParam String education,
-            @RequestParam String experience,
-            @RequestParam("file") MultipartFile file) throws IOException {
-
-        return applicationService.submitApplicationWithCv(
-                userId,
-                phone,
-                address,
-                education,
-                experience,
-                file
-        );
-    }
-
-    // Get all applications
     @GetMapping
     public List<Application> getAllApplications() {
         return applicationService.getAllApplications();
     }
 
-    // Get application by id
+    @GetMapping("/user/{userId}")
+    public List<Application> getApplicationsByUser(@PathVariable Long userId) {
+        return applicationService.getApplicationsByUser(userId);
+    }
+
+    @GetMapping("/hr/latest")
+    public List<Application> getLatestApplicationsForHr() {
+        return applicationService.getLatestTenSortedAlphabetically();
+    }
+
+    @GetMapping("/hr/approved")
+    public List<Application> getApprovedApplications() {
+        return applicationService.getApprovedApplications();
+    }
+
     @GetMapping("/{id}")
     public Application getApplicationById(@PathVariable Long id) {
         return applicationService.getApplicationById(id);
     }
 
-    // Delete application
     @DeleteMapping("/{id}")
     public String deleteApplication(@PathVariable Long id) {
         applicationService.deleteApplication(id);
         return "Application deleted successfully";
     }
 
-    // Upload CV
-
-    @PostMapping("/upload")
-    public String uploadCv(@RequestParam("file") MultipartFile file) {
-        return "Uploaded: " + file.getOriginalFilename();
+    @PutMapping("/{id}/review")
+    public Application reviewApplication(@PathVariable Long id) {
+        return applicationService.reviewApplication(id);
     }
+
     @PutMapping("/{id}/approve")
     public Application approveApplication(@PathVariable Long id) {
-
         return applicationService.approveApplication(id);
     }
+
     @PutMapping("/{id}/reject")
     public Application rejectApplication(
             @PathVariable Long id,
             @RequestParam String reason) {
-
         return applicationService.rejectApplication(id, reason);
     }
 

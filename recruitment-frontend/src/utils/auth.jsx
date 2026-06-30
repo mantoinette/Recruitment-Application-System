@@ -1,5 +1,3 @@
-// src/utils/auth.js
-
 export function getUser() {
     const user = localStorage.getItem("user");
 
@@ -15,9 +13,22 @@ export function getUser() {
     }
 }
 
+export function isAuthenticated() {
+    return Boolean(getUser());
+}
+
+export function getRoleRoute(role) {
+    switch (role) {
+        case "HR":
+            return "/hr/dashboard";
+        case "ADMIN":
+            return "/admin/dashboard";
+        default:
+            return "/applicant/dashboard";
+    }
+}
+
 export function logout(navigate) {
     localStorage.removeItem("user");
-
-    // Redirect to login page
     navigate("/login");
 }

@@ -1,18 +1,12 @@
 package com.anto.recruitment_system.service;
 
-import com.anto.recruitment_system.entity.Application;
-import com.anto.recruitment_system.entity.ApplicationStatus;
-import com.anto.recruitment_system.entity.User;
+import com.anto.recruitment_system.entity.*;
 import com.anto.recruitment_system.repository.ApplicationRepository;
 import com.anto.recruitment_system.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.UUID;
 
 @Service
 public class ApplicationService {
@@ -20,120 +14,128 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final ApplicantProfileService profileService;
+    private final JobVacancyService jobVacancyService;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               UserRepository userRepository,
-                              EmailService emailService) {
+                              EmailService emailService,
+                              ApplicantProfileService profileService,
+                              JobVacancyService jobVacancyService) {
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.profileService = profileService;
+        this.jobVacancyService = jobVacancyService;
     }
 
-    // Applicant submits application
-    public Application submitApplication(Application application) {
-
-        // Every new application starts as PENDING
-        application.setStatus(ApplicationStatus.PENDING);
-
-        Application savedApplication = applicationRepository.save(application);
-
-        sendUnderReviewEmail(savedApplication);
-
-        return savedApplication;
-    }
-
-    public Application submitApplicationWithCv(
-            Long userId,
-            String phone,
-            String address,
-            String education,
-            String experience,
-            MultipartFile file) throws IOException {
-
-        if (userId == null) {
-            throw new IllegalArgumentException("User is required");
-        }
-
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("CV file is required");
+    public Application applyForJob(Long userId, Long jobId) {
+        if (!profileService.isProfileComplete(userId)) {
+            throw new IllegalArgumentException(
+                    "Complete your profile before applying. Required: personal info, education, experience, skills, CV, and NID/NESA verification."
+            );
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Path uploadDirectory = Path.of("uploads", "cvs");
-        Files.createDirectories(uploadDirectory);
+        JobVacancy job = jobVacancyService.getJobById(jobId);
+        if (job.getStatus() != JobStatus.OPEN) {
+            throw new IllegalArgumentException("This job vacancy is no longer open");
+        }
 
-        String originalFilename = file.getOriginalFilename() == null
-                ? "cv"
-                : Path.of(file.getOriginalFilename()).getFileName().toString();
-        String storedFilename = UUID.randomUUID() + "-" + originalFilename;
-        Path storedFile = uploadDirectory.resolve(storedFilename);
+        ApplicantProfile profile = profileService.getProfileByUserId(userId);
 
-        file.transferTo(storedFile);
+        boolean alreadyApplied = applicationRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .anyMatch(application -> application.getJob() != null
+                        && application.getJob().getId().equals(jobId));
+
+        if (alreadyApplied) {
+            throw new IllegalArgumentException("You have already applied for this position");
+        }
 
         Application application = new Application();
-        application.setPhone(phone);
-        application.setAddress(address);
-        application.setEducation(education);
-        application.setExperience(experience);
-        application.setCvUrl(storedFile.toString());
+        application.setNationalId(profile.getNationalId());
+        application.setPhone(profile.getPhone());
+        application.setAddress(profile.getAddress());
+        application.setEducation(profile.getEducation());
+        application.setNesaGrade(profile.getNesaGrade());
+        application.setNesaOption(profile.getNesaOption());
+        application.setExperience(profile.getExperience());
+        application.setPositionApplied(job.getTitle());
+        application.setCvUrl(profile.getCvUrl());
         application.setUser(user);
+        application.setJob(job);
         application.setStatus(ApplicationStatus.PENDING);
 
         Application savedApplication = applicationRepository.save(application);
-
         sendUnderReviewEmail(savedApplication);
-
         return savedApplication;
     }
 
-    // Get all applications
     public List<Application> getAllApplications() {
         return applicationRepository.findAll();
     }
 
-    // Get one application
-    public Application getApplicationById(Long id) {
-        return applicationRepository.findById(id).orElse(null);
+    public List<Application> getApplicationsByUser(Long userId) {
+        return applicationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    // Delete application
+    public List<Application> getLatestTenSortedAlphabetically() {
+        return applicationRepository.findTop10ByOrderByCreatedAtDesc()
+                .stream()
+                .sorted(Comparator.comparing(
+                        application -> application.getUser().getFullName(),
+                        String.CASE_INSENSITIVE_ORDER
+                ))
+                .toList();
+    }
+
+    public List<Application> getApprovedApplications() {
+        return applicationRepository.findAll()
+                .stream()
+                .filter(application -> application.getStatus() == ApplicationStatus.APPROVED)
+                .sorted(Comparator.comparing(
+                        application -> application.getUser().getFullName(),
+                        String.CASE_INSENSITIVE_ORDER
+                ))
+                .toList();
+    }
+
+    public Application getApplicationById(Long id) {
+        return applicationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+    }
+
     public void deleteApplication(Long id) {
         applicationRepository.deleteById(id);
     }
 
-    // HR approves application
+    public Application reviewApplication(Long id) {
+        Application application = getApplicationById(id);
+        application.setStatus(ApplicationStatus.REVIEWED);
+        return applicationRepository.save(application);
+    }
+
     public Application approveApplication(Long id) {
-
-        Application application =
-                applicationRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Application not found"));
-
+        Application application = getApplicationById(id);
         application.setStatus(ApplicationStatus.APPROVED);
-
         Application savedApplication = applicationRepository.save(application);
-
         sendApprovedEmail(savedApplication);
-
         return savedApplication;
     }
 
-    // HR rejects application
     public Application rejectApplication(Long id, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Rejection reason is required");
+        }
 
-        Application application =
-                applicationRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Application not found"));
-
+        Application application = getApplicationById(id);
         application.setStatus(ApplicationStatus.REJECTED);
-
-        application.setRejectionReason(reason);
-
+        application.setRejectionReason(reason.trim());
         Application savedApplication = applicationRepository.save(application);
-
         sendRejectedEmail(savedApplication);
-
         return savedApplication;
     }
 

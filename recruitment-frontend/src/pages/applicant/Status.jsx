@@ -1,27 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import { getUser } from "../../utils/auth";
 
 function Status() {
+    const user = getUser() || {};
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const user = useMemo(() => JSON.parse(localStorage.getItem("user") || "{}"), []);
 
     useEffect(() => {
         const loadApplications = async () => {
+            if (!user.id) {
+                setLoading(false);
+                return;
+            }
+
             try {
-                const response = await api.get("/applications");
-                const allApplications = Array.isArray(response.data) ? response.data : [];
-                const ownApplications = allApplications.filter((application) => {
-                    if (!user.id) {
-                        return false;
-                    }
-
-                    return application.user?.id === user.id;
-                });
-
-                setApplications(ownApplications);
+                const response = await api.get(`/applications/user/${user.id}`);
+                setApplications(Array.isArray(response.data) ? response.data : []);
             } catch (fetchError) {
                 console.error("Failed to load application status", fetchError);
                 setError("Could not load your application status.");
@@ -41,7 +38,7 @@ function Status() {
                         <div className="page-kicker">Status</div>
                         <h1 className="page-title">Track your applications</h1>
                         <p className="page-copy">
-                            See whether your submitted application is still pending, approved, or rejected.
+                            See whether your submitted application is pending, under review, approved, or rejected.
                         </p>
                     </div>
                 </div>
@@ -50,9 +47,7 @@ function Status() {
                     <h2 className="panel-title">Your submissions</h2>
 
                     {loading && <p className="muted">Loading applications...</p>}
-
                     {!loading && error && <div className="message error">{error}</div>}
-
                     {!loading && !error && applications.length === 0 && (
                         <p className="muted">No applications found for this account.</p>
                     )}
@@ -66,7 +61,12 @@ function Status() {
                                     <div className="status-item" key={application.id}>
                                         <div>
                                             <div className="step-title">
-                                                Application #{application.id}
+                                                {application.positionApplied || `Application #${application.id}`}
+                                            </div>
+                                            <div className="muted">
+                                                Submitted {application.createdAt
+                                                    ? new Date(application.createdAt).toLocaleDateString()
+                                                    : "recently"}
                                             </div>
                                             <div className="muted">
                                                 {application.education || "Education not provided"}

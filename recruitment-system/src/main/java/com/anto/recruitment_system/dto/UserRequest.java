@@ -4,7 +4,7 @@ import com.anto.recruitment_system.entity.Role;
 import lombok.Data;
 
 @Data
-public class RegisterRequest {
+public class UserRequest {
 
     private String fullName;
     private String email;

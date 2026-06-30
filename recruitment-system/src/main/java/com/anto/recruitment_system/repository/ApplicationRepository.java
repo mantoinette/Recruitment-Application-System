@@ -1,17 +1,16 @@
 package com.anto.recruitment_system.repository;
 
 import com.anto.recruitment_system.entity.Application;
+import com.anto.recruitment_system.entity.ApplicationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-    Application save(Application application);
 
-    List<Application> findAll();
+    List<Application> findByUserIdOrderByCreatedAtDesc(Long userId);
 
-    Optional<Application> findById(Long id);
+    long countByStatus(ApplicationStatus status);
 
-    void deleteById(Long id);
+    List<Application> findTop10ByOrderByCreatedAtDesc();
 }

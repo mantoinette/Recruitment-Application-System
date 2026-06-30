@@ -1,178 +1,148 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import { getUser } from "../../utils/auth";
 
 function ApplicationForm() {
+    const { jobId } = useParams();
+    const navigate = useNavigate();
+    const user = getUser() || {};
 
-    // Store applicant information
-    const [application, setApplication] = useState({
-        phone: "",
-        address: "",
-        education: "",
-        experience: ""
-    });
-
-    const [cvFile, setCvFile] = useState(null);
+    const [job, setJob] = useState(null);
+    const [profileComplete, setProfileComplete] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("success");
-    const [loading, setLoading] = useState(false);
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    // Handle text field changes
-    const handleChange = (e) => {
-        setApplication({
-            ...application,
-            [e.target.name]: e.target.value
-        });
-    };
+    useEffect(() => {
+        const loadData = async () => {
+            if (!user.id || !jobId) {
+                setLoading(false);
+                return;
+            }
 
-    // Handle file selection
-    const handleFileChange = (e) => {
-        setCvFile(e.target.files[0] || null);
-    };
+            try {
+                const [jobResponse, profileStatus] = await Promise.all([
+                    api.get(`/jobs/${jobId}`),
+                    api.get(`/profile/${user.id}/status`)
+                ]);
 
-    // Submit application
-    const submitApplication = async (event) => {
+                setJob(jobResponse.data);
+                setProfileComplete(Boolean(profileStatus.data.profileComplete));
+            } catch (error) {
+                console.error("Failed to load application data", error);
+                setMessageType("error");
+                setMessage("Could not load job or profile information.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        event.preventDefault();
+        loadData();
+    }, [user.id, jobId]);
+
+    const submitApplication = async () => {
+        setSubmitting(true);
         setMessage("");
-        setLoading(true);
 
         try {
-            const formData = new FormData();
-
-            formData.append("userId", user.id);
-            formData.append("phone", application.phone);
-            formData.append("address", application.address);
-            formData.append("education", application.education);
-            formData.append("experience", application.experience);
-            formData.append("file", cvFile);
-
-            await api.post(
-                "/applications",
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data"
-                    }
-                }
-            );
-
-            setApplication({
-                phone: "",
-                address: "",
-                education: "",
-                experience: ""
+            await api.post("/applications/apply", {
+                userId: user.id,
+                jobId: Number(jobId)
             });
-            setCvFile(null);
+
             setMessageType("success");
             setMessage("Application submitted successfully.");
-
+            setTimeout(() => navigate("/applicant/status"), 1500);
         } catch (error) {
-
-            console.error(error);
-            const errorMessage = error.response?.data || "Failed to submit application. Please check the backend and try again.";
             setMessageType("error");
-            setMessage(errorMessage);
-
+            setMessage(error.response?.data || "Application submission failed.");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
     return (
-        <ApplicantLayout title="Submit Application">
+        <ApplicantLayout title="Apply for Job">
             <section className="page">
                 <div className="page-header">
                     <div>
                         <div className="page-kicker">Application</div>
-                        <h1 className="page-title">Submit your candidate details</h1>
+                        <h1 className="page-title">Submit your application</h1>
                         <p className="page-copy">
-                            Keep your information accurate so HR can review your application without delays.
+                            Your completed profile will be used for this application.
                         </p>
                     </div>
                 </div>
 
-                <div className="panel">
-                    <form onSubmit={submitApplication}>
-                        <div className="form-grid">
-                            <div className="field">
-                                <label htmlFor="phone">Phone number</label>
-                                <input
-                                    id="phone"
-                                    type="text"
-                                    name="phone"
-                                    placeholder="e.g. +27 72 000 0000"
-                                    value={application.phone}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
+                {loading && <p className="muted">Loading...</p>}
 
-                            <div className="field">
-                                <label htmlFor="address">Address</label>
-                                <input
-                                    id="address"
-                                    type="text"
-                                    name="address"
-                                    placeholder="City, province"
-                                    value={application.address}
-                                    onChange={handleChange}
-                                    required
-                                />
+                {!loading && job && (
+                    <div className="grid two-column">
+                        <div className="panel">
+                            <h2 className="panel-title">{job.title}</h2>
+                            <div className="profile-row">
+                                <div className="profile-label">Department</div>
+                                <div className="profile-value">{job.department}</div>
                             </div>
-
-                            <div className="field full">
-                                <label htmlFor="education">Education</label>
-                                <input
-                                    id="education"
-                                    type="text"
-                                    name="education"
-                                    placeholder="Highest qualification or current studies"
-                                    value={application.education}
-                                    onChange={handleChange}
-                                    required
-                                />
+                            <div className="profile-row">
+                                <div className="profile-label">Location</div>
+                                <div className="profile-value">{job.location}</div>
                             </div>
-
-                            <div className="field full">
-                                <label htmlFor="experience">Work experience</label>
-                                <textarea
-                                    id="experience"
-                                    name="experience"
-                                    placeholder="Summarize your relevant work experience"
-                                    value={application.experience}
-                                    onChange={handleChange}
-                                    required
-                                />
+                            <div className="profile-row">
+                                <div className="profile-label">Employment type</div>
+                                <div className="profile-value">{job.employmentType}</div>
                             </div>
-
-                            <div className="field full">
-                                <label htmlFor="cv">CV file name</label>
-                                <input
-                                    id="cv"
-                                    type="file"
-                                    onChange={handleFileChange}
-                                    accept=".pdf,.doc,.docx"
-                                    required
-                                />
-                                {cvFile && <div className="muted">Selected: {cvFile.name}</div>}
+                            <div className="profile-row">
+                                <div className="profile-label">Deadline</div>
+                                <div className="profile-value">{job.deadline}</div>
                             </div>
+                            <p className="page-copy">{job.shortDescription}</p>
                         </div>
 
-                        {message && (
-                            <div className={`message ${messageType === "error" ? "error" : ""}`}>
-                                {message}
-                            </div>
-                        )}
+                        <div className="panel">
+                            <h2 className="panel-title">Application checklist</h2>
 
-                        <div className="form-actions">
-                            <button className="primary-button" type="submit" disabled={loading}>
-                                {loading ? "Submitting..." : "Submit application"}
-                            </button>
+                            <div className={`checklist-item ${profileComplete ? "done" : "pending"}`}>
+                                {profileComplete ? <FiCheckCircle /> : <FiAlertCircle />}
+                                <div>
+                                    <div className="step-title">Profile completion</div>
+                                    <div className="muted">
+                                        {profileComplete
+                                            ? "Your profile is complete and ready."
+                                            : "Complete your profile before applying."}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!profileComplete && (
+                                <Link className="secondary-button" to="/applicant/profile">
+                                    Complete profile
+                                </Link>
+                            )}
+
+                            {message && (
+                                <div className={`message ${messageType === "error" ? "error" : ""}`}>
+                                    {message}
+                                </div>
+                            )}
+
+                            <div className="form-actions">
+                                <button
+                                    className="primary-button"
+                                    type="button"
+                                    onClick={submitApplication}
+                                    disabled={!profileComplete || submitting}
+                                >
+                                    {submitting ? "Submitting..." : "Submit application"}
+                                </button>
+                            </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                )}
             </section>
         </ApplicantLayout>
     );

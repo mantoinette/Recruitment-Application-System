@@ -1,11 +1,13 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiClipboard, FiFileText, FiHome, FiLogOut, FiUser } from "react-icons/fi";
+import { FiBarChart2, FiLogOut, FiUsers } from "react-icons/fi";
+import { getUser, logout } from "../utils/auth";
 import "../assets/applicant.css";
+import "../assets/hr-dashboard.css";
 
-function ApplicantLayout({ children, title = "Applicant Portal" }) {
+function AdminLayout({ children, title = "Admin Panel" }) {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const fullName = user.fullName || "Applicant";
+    const user = getUser();
+    const fullName = user?.fullName || "Admin User";
     const initials = fullName
         .split(" ")
         .filter(Boolean)
@@ -14,38 +16,24 @@ function ApplicantLayout({ children, title = "Applicant Portal" }) {
         .join("")
         .toUpperCase() || "A";
 
-    const logout = () => {
-        localStorage.removeItem("user");
-        navigate("/login");
-    };
-
     return (
         <div className="app-shell">
             <aside className="app-sidebar">
                 <div className="brand-block">
                     <h2 className="brand-title">Recruitment</h2>
-                    <div className="brand-subtitle">Applicant workspace</div>
+                    <div className="brand-subtitle">Admin Panel</div>
                 </div>
 
                 <nav className="app-nav">
-                    <NavLink to="/applicant/dashboard">
-                        <FiHome /> Dashboard
+                    <NavLink to="/admin/dashboard" end>
+                        <FiBarChart2 /> Dashboard
                     </NavLink>
-                    <NavLink to="/applicant/apply">
-                        <FiFileText /> Apply
-                    </NavLink>
-                    <NavLink to="/applicant/status">
-                        <FiClipboard /> Status
-                    </NavLink>
-                    <NavLink to="/applicant/profile">
-                        <FiUser /> Profile
-                    </NavLink>
-                    <NavLink to="/">
-                        <FiFileText /> Vacancies
+                    <NavLink to="/admin/users">
+                        <FiUsers /> Users
                     </NavLink>
                 </nav>
 
-                <button className="logout-link" type="button" onClick={logout}>
+                <button className="logout-link" type="button" onClick={() => logout(navigate)}>
                     <FiLogOut /> Logout
                 </button>
             </aside>
@@ -57,7 +45,7 @@ function ApplicantLayout({ children, title = "Applicant Portal" }) {
                         <div className="avatar">{initials}</div>
                         <div>
                             <div className="user-name">{fullName}</div>
-                            <div className="user-role">{(user.role || "APPLICANT").toLowerCase()}</div>
+                            <div className="user-role">administrator</div>
                         </div>
                     </div>
                 </header>
@@ -68,4 +56,4 @@ function ApplicantLayout({ children, title = "Applicant Portal" }) {
     );
 }
 
-export default ApplicantLayout;
+export default AdminLayout;

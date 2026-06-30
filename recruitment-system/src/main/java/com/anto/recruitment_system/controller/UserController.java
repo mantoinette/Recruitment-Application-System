@@ -1,7 +1,9 @@
 package com.anto.recruitment_system.controller;
 
+import com.anto.recruitment_system.dto.UserRequest;
 import com.anto.recruitment_system.entity.User;
 import com.anto.recruitment_system.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,35 +14,38 @@ public class UserController {
 
     private final UserService userService;
 
-    // Constructor Injection
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    // Create User
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public User createUser(@RequestBody UserRequest request) {
+        return userService.createUser(request);
     }
 
-    // Get All Users
+    @PutMapping("/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody UserRequest request) {
+        return userService.updateUser(id, request);
+    }
+
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // Get User By ID
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
-    // Delete User
     @DeleteMapping("/{id}")
     public String deleteUser(@PathVariable Long id) {
-
         userService.deleteUser(id);
-
         return "User deleted successfully";
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleBadRequest(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(exception.getMessage());
     }
 }

@@ -1,83 +1,120 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight, FiBarChart2, FiCheckCircle, FiClipboard } from "react-icons/fi";
+import { FiArrowRight, FiBriefcase, FiCalendar, FiMapPin } from "react-icons/fi";
+import api from "../api/axios";
 import "../assets/public.css";
 
 function Home() {
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadJobs = async () => {
+            try {
+                const response = await api.get("/jobs/open");
+                setJobs(Array.isArray(response.data) ? response.data : []);
+            } catch (error) {
+                console.error("Failed to load jobs", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadJobs();
+    }, []);
+
     return (
         <div className="public-page">
             <header className="public-header">
                 <Link className="public-brand" to="/">
-                    <strong>Recruitment</strong>
-                    <span>Application Management System</span>
+                    <strong>RecruitPro</strong>
+                    <span>Professional Recruitment Platform</span>
                 </Link>
 
                 <nav className="public-nav">
                     <Link to="/login">Login</Link>
                     <Link className="public-button primary" to="/register">
-                        Apply now
+                        Create account
                     </Link>
                 </nav>
             </header>
 
-            <main className="home-hero">
-                <section className="hero-content">
-                    <div className="eyebrow">Simple recruitment workflow</div>
-                    <h1 className="hero-title">Recruitment Management System</h1>
+            <section className="jobs-hero">
+                <div className="jobs-hero-content">
+                    <div className="eyebrow">Career opportunities</div>
+                    <h1 className="hero-title">Find your next role</h1>
                     <p className="hero-copy">
-                        Submit applications, track review status, and help HR teams manage candidates from one organized workspace.
+                        Browse open vacancies, review full job details, complete your profile, and apply with confidence.
                     </p>
-
                     <div className="hero-actions">
                         <Link className="public-button primary" to="/register">
-                            Start application <FiArrowRight />
+                            Get started <FiArrowRight />
                         </Link>
                         <Link className="public-button secondary" to="/login">
                             Sign in
                         </Link>
                     </div>
+                </div>
 
-                    <div className="hero-proof">
-                        <div className="proof-item">
-                            <div className="proof-value">CV</div>
-                            <div className="proof-label">Attach and submit candidate documents</div>
-                        </div>
-                        <div className="proof-item">
-                            <div className="proof-value">HR</div>
-                            <div className="proof-label">Review, approve, or reject applications</div>
-                        </div>
-                        <div className="proof-item">
-                            <div className="proof-value">Admin</div>
-                            <div className="proof-label">Manage users and system access</div>
-                        </div>
+                <div className="hero-stats-strip">
+                    <div className="hero-stat">
+                        <strong>{jobs.length}</strong>
+                        <span>Open positions</span>
                     </div>
-                </section>
+                    <div className="hero-stat">
+                        <strong>3</strong>
+                        <span>User roles</span>
+                    </div>
+                    <div className="hero-stat">
+                        <strong>100%</strong>
+                        <span>Online process</span>
+                    </div>
+                </div>
+            </section>
 
-                <section className="hero-media" aria-label="Recruitment workspace preview">
-                    <div className="hero-panel">
-                        <div className="hero-panel-title">Application workflow</div>
-                        <div className="hero-panel-row">
-                            <div className="panel-icon"><FiClipboard /></div>
-                            <div>
-                                <div className="panel-main">Applicant submits profile</div>
-                                <div className="panel-sub">Personal details, education, experience, and CV</div>
-                            </div>
-                        </div>
-                        <div className="hero-panel-row">
-                            <div className="panel-icon"><FiCheckCircle /></div>
-                            <div>
-                                <div className="panel-main">HR reviews decision</div>
-                                <div className="panel-sub">Application status is visible to the applicant</div>
-                            </div>
-                        </div>
-                        <div className="hero-panel-row">
-                            <div className="panel-icon"><FiBarChart2 /></div>
-                            <div>
-                                <div className="panel-main">Dashboards stay current</div>
-                                <div className="panel-sub">Role-based access keeps work organized</div>
-                            </div>
-                        </div>
+            <main className="jobs-section">
+                <div className="section-header">
+                    <div>
+                        <div className="eyebrow">Vacancies</div>
+                        <h2 className="section-title">Available job openings</h2>
+                        <p className="section-copy">
+                            Explore current opportunities across departments and locations.
+                        </p>
                     </div>
-                </section>
+                </div>
+
+                {loading && <p className="muted">Loading vacancies...</p>}
+
+                {!loading && jobs.length === 0 && (
+                    <div className="empty-state">
+                        <FiBriefcase size={28} />
+                        <p>No open vacancies at the moment. Please check back soon.</p>
+                    </div>
+                )}
+
+                <div className="jobs-grid">
+                    {jobs.map((job) => (
+                        <article className="job-card" key={job.id}>
+                            <div className="job-card-top">
+                                <span className="job-badge">{job.employmentType}</span>
+                                <span className="job-deadline">
+                                    <FiCalendar /> Deadline: {job.deadline}
+                                </span>
+                            </div>
+
+                            <h3 className="job-title">{job.title}</h3>
+                            <div className="job-meta">
+                                <span><FiBriefcase /> {job.department}</span>
+                                <span><FiMapPin /> {job.location}</span>
+                            </div>
+                            <p className="job-description">{job.shortDescription}</p>
+
+                            <Link className="public-button primary job-card-button" to={`/jobs/${job.id}`}>
+                                View details <FiArrowRight />
+                            </Link>
+                        </article>
+                    ))}
+                </div>
             </main>
         </div>
     );

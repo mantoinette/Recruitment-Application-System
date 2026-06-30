@@ -371,8 +371,215 @@
     background: #ffe7e7;
 }
 
+.badge.reviewed {
+    color: #1d4f91;
+    background: #e8f1ff;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #e4e8ef;
+    text-align: left;
+}
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.inline-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.inline-actions input {
+    flex: 1;
+}
+
+.field select {
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    padding: 12px 13px;
+    font: inherit;
+    font-size: 15px;
+    background: #ffffff;
+    color: #172033;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 32, 51, 0.55);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    z-index: 1000;
+}
+
+.modal-panel {
+    width: min(760px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 24px 60px rgba(20, 31, 49, 0.18);
+}
+
+.stats-breakdown {
+    display: grid;
+    gap: 4px;
+}
+
 .profile-card {
     max-width: 760px;
+}
+
+.stat-card.highlight {
+    background: linear-gradient(135deg, #eef3fb 0%, #ffffff 100%);
+    border-color: #c7d8f8;
+}
+
+.stat-value.small {
+    font-size: 22px;
+}
+
+.alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff8e8;
+    border: 1px solid #fde6a8;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+}
+
+.completion-pill {
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    background: #fff4d8;
+    color: #8a5b00;
+}
+
+.completion-pill.complete {
+    background: #e6f7ec;
+    color: #176038;
+}
+
+.checklist-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+}
+
+.checklist-item.done {
+    background: #e6f7ec;
+    color: #176038;
+}
+
+.checklist-item.pending {
+    background: #fff4d8;
+    color: #8a5b00;
+}
+
+.chart-bars {
+    display: grid;
+    gap: 14px;
+}
+
+.chart-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 40px;
+    gap: 12px;
+    align-items: center;
+}
+
+.chart-label,
+.chart-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.chart-track {
+    height: 10px;
+    background: #eef2f7;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.chart-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.activity-feed {
+    display: grid;
+    gap: 12px;
+}
+
+.activity-item {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid #e4e8ef;
+    border-radius: 10px;
+}
+
+.activity-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.activity-title {
+    font-weight: 700;
+    color: #172033;
+}
+
+.quick-links-panel {
+    margin-top: 18px;
+}
+
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.quick-link-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 10px;
+    background: #eef3fb;
+    color: #24415f;
+    text-decoration: none;
+    font-weight: 700;
+    transition: background 0.2s ease;
+}
+
+.quick-link-card:hover {
+    background: #dfeafb;
 }
 
 .profile-row {

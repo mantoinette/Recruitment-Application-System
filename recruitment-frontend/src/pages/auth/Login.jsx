@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 import { FiCheckCircle, FiLock, FiLogIn, FiMail } from "react-icons/fi";
+import { getRoleRoute } from "../../utils/auth";
 import "../../assets/public.css";
 
 function Login() {
@@ -35,21 +36,7 @@ function Login() {
 
             // save user in local storage
             localStorage.setItem("user", JSON.stringify(loggedInUser));
-
-            const email = loggedInUser.email?.toLowerCase();
-
-            // DEFAULT ROUTE = applicant
-            let route = "/applicant/dashboard";
-
-            // ROLE BASED ON EMAIL (your requirement)
-            if (email === "admin@gmail.com") {
-                route = "/admin/dashboard";
-            }
-            else if (email === "hr@gmail.com") {
-                route = "/hr/dashboard";
-            }
-
-            navigate(route);
+            navigate(getRoleRoute(loggedInUser.role));
 
         } catch (error) {
 
@@ -70,8 +57,8 @@ function Login() {
 
             <header className="public-header">
                 <Link className="public-brand" to="/">
-                    <strong>Recruitment</strong>
-                    <span>Application Management System</span>
+                    <strong>RecruitPro</strong>
+                    <span>Professional Recruitment Platform</span>
                 </Link>
 
                 <nav className="public-nav">
