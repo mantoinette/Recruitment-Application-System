@@ -3,6 +3,7 @@ import api from "../../api/axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FiCheckCircle, FiLock, FiLogIn, FiMail } from "react-icons/fi";
 import { getRoleRoute } from "../../utils/auth";
+import loginImage from "../../assets/auth-login.png";
 import PublicFooter from "../../components/PublicFooter";
 import PublicHeader from "../../components/PublicHeader";
 import "../../assets/public.css";
@@ -135,30 +136,30 @@ function Login() {
 
                 </section>
 
-                <section className="auth-side">
+                <section className="auth-side auth-side-panel">
+                    <img src={loginImage} alt="" className="auth-side-image" aria-hidden="true" />
+                    <div className="auth-side-overlay" />
+                    <div className="auth-side-content">
+                        <h2>Access your recruitment workspace</h2>
 
-                    <h2>Access your recruitment workspace</h2>
+                        <p>
+                            Applicants, HR, and Admins each have their own dashboards.
+                        </p>
 
-                    <p>
-                        Applicants, HR, and Admins each have their own dashboards.
-                    </p>
+                        <div className="auth-checks">
+                            <div className="auth-check">
+                                <FiCheckCircle /> Role-based navigation
+                            </div>
 
-                    <div className="auth-checks">
+                            <div className="auth-check">
+                                <FiCheckCircle /> Secure authentication
+                            </div>
 
-                        <div className="auth-check">
-                            <FiCheckCircle /> Role-based navigation
+                            <div className="auth-check">
+                                <FiCheckCircle /> Recruitment workflow system
+                            </div>
                         </div>
-
-                        <div className="auth-check">
-                            <FiCheckCircle /> Secure authentication
-                        </div>
-
-                        <div className="auth-check">
-                            <FiCheckCircle /> Recruitment workflow system
-                        </div>
-
                     </div>
-
                 </section>
 
             </main>

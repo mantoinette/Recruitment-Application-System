@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
     FiArrowRight,
     FiBriefcase,
@@ -134,7 +134,17 @@ function VacancyModal({ jobId, onClose }) {
 function Home() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedJobId, setSelectedJobId] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+
+    const selectedJobId = (() => {
+        const raw = searchParams.get("job");
+        if (!raw) {
+            return null;
+        }
+        const id = Number(raw);
+        return Number.isFinite(id) ? id : null;
+    })();
 
     useEffect(() => {
         const loadJobs = async () => {
@@ -151,14 +161,34 @@ function Home() {
         loadJobs();
     }, []);
 
+    useEffect(() => {
+        if (location.hash !== "#vacancies" || selectedJobId) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            document.getElementById("vacancies")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+
+        return () => window.clearTimeout(timer);
+    }, [location.hash, location.pathname, selectedJobId]);
+
     const openVacancy = (jobId) => {
-        setSelectedJobId(jobId);
+        setSearchParams({ job: String(jobId) });
     };
 
     const closeVacancy = () => {
-        setSelectedJobId(null);
-        const vacancies = document.getElementById("vacancies");
-        vacancies?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setSearchParams({});
+        window.setTimeout(() => {
+            document.getElementById("vacancies")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+    };
+
+    const handleCardKeyDown = (event, jobId) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openVacancy(jobId);
+        }
     };
 
     return (
@@ -195,7 +225,11 @@ function Home() {
 
                     <div className="home-hero-visual">
                         <div className="home-hero-image-wrap">
-                            <img src={heroImage} alt="Professionals collaborating in a modern office" className="home-hero-image" />
+                            <img
+                                src={heroImage}
+                                alt="Professionals collaborating in a modern office"
+                                className="home-hero-image"
+                            />
                             <div className="home-hero-image-glow" />
                         </div>
 
@@ -286,7 +320,14 @@ function Home() {
 
                 <div className="jobs-grid home-jobs-grid">
                     {jobs.map((job) => (
-                        <article className="job-card home-job-card" key={job.id}>
+                        <article
+                            className="job-card home-job-card clickable-job-card"
+                            key={job.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openVacancy(job.id)}
+                            onKeyDown={(event) => handleCardKeyDown(event, job.id)}
+                        >
                             <div className="job-card-accent" />
                             <div className="job-card-top">
                                 <span className="job-badge">{job.employmentType}</span>
@@ -302,13 +343,9 @@ function Home() {
                             </div>
                             <p className="job-description">{job.shortDescription}</p>
 
-                            <button
-                                className="public-button primary job-card-button"
-                                type="button"
-                                onClick={() => openVacancy(job.id)}
-                            >
+                            <span className="public-button primary job-card-button">
                                 View details <FiArrowRight />
-                            </button>
+                            </span>
                         </article>
                     ))}
                 </div>

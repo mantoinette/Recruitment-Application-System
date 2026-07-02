@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FiCheckCircle, FiLock, FiMail, FiUser, FiUserPlus } from "react-icons/fi";
 import PublicFooter from "../../components/PublicFooter";
 import PublicHeader from "../../components/PublicHeader";
+import registerImage from "../../assets/auth-register.png";
 import "../../assets/public.css";
 
 const roleDescriptions = {
@@ -145,20 +146,24 @@ function Register() {
                     </div>
                 </section>
 
-                <section className="auth-side">
-                    <h2>One platform for every recruitment role.</h2>
-                    <p>
-                        Applicants complete their profile before applying. HR reviews submissions. Admins manage users and monitor system activity.
-                    </p>
-                    <div className="auth-checks">
-                        <div className="auth-check">
-                            <FiCheckCircle /> Role-based dashboard access
-                        </div>
-                        <div className="auth-check">
-                            <FiCheckCircle /> Profile-first application workflow
-                        </div>
-                        <div className="auth-check">
-                            <FiCheckCircle /> NID and NESA verification support
+                <section className="auth-side auth-side-panel">
+                    <img src={registerImage} alt="" className="auth-side-image" aria-hidden="true" />
+                    <div className="auth-side-overlay" />
+                    <div className="auth-side-content">
+                        <h2>One platform for every recruitment role.</h2>
+                        <p>
+                            Applicants complete their profile before applying. HR reviews submissions. Admins manage users and monitor system activity.
+                        </p>
+                        <div className="auth-checks">
+                            <div className="auth-check">
+                                <FiCheckCircle /> Role-based dashboard access
+                            </div>
+                            <div className="auth-check">
+                                <FiCheckCircle /> Profile-first application workflow
+                            </div>
+                            <div className="auth-check">
+                                <FiCheckCircle /> NID and NESA verification support
+                            </div>
                         </div>
                     </div>
                 </section>
