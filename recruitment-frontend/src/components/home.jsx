@@ -8,7 +8,6 @@ import {
     FiClock,
     FiMapPin,
     FiShield,
-    FiTrendingUp,
     FiUserCheck,
     FiUsers,
     FiX
@@ -231,22 +230,6 @@ function Home() {
                                 className="home-hero-image"
                             />
                             <div className="home-hero-image-glow" />
-                        </div>
-
-                        <div className="home-hero-float-card top">
-                            <FiTrendingUp />
-                            <div>
-                                <strong>{jobs.length} live openings</strong>
-                                <p>Updated from your recruitment dashboard</p>
-                            </div>
-                        </div>
-
-                        <div className="home-hero-float-card bottom">
-                            <FiUsers />
-                            <div>
-                                <strong>Trusted by teams</strong>
-                                <p>Applicants · HR · Admin in one platform</p>
-                            </div>
                         </div>
                     </div>
                 </div>
