@@ -529,6 +529,23 @@
     border: 1px solid #e8edf4;
 }
 
+.workflow-note-link {
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workflow-note-link:hover {
+    border-color: #86efac;
+    box-shadow: 0 8px 20px rgba(20, 31, 49, 0.05);
+}
+
+.empty-state-block {
+    display: grid;
+    gap: 12px;
+    max-width: 640px;
+}
+
 .workflow-note svg {
     color: #16a34a;
     font-size: 20px;

@@ -1,8 +1,10 @@
 package com.anto.recruitment_system.service;
 
 import com.anto.recruitment_system.entity.Application;
+import com.anto.recruitment_system.entity.ApplicationStatus;
 import com.anto.recruitment_system.entity.Notification;
 import com.anto.recruitment_system.entity.User;
+import com.anto.recruitment_system.repository.ApplicationRepository;
 import com.anto.recruitment_system.repository.NotificationRepository;
 import com.anto.recruitment_system.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -17,11 +19,14 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final ApplicationRepository applicationRepository;
 
     public NotificationService(NotificationRepository notificationRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               ApplicationRepository applicationRepository) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.applicationRepository = applicationRepository;
     }
 
     public List<Notification> getNotificationsForUser(Long userId) {
@@ -119,6 +124,8 @@ public class NotificationService {
             throw new IllegalArgumentException("message is required");
         }
 
+        validateInterviewNotification(applicationId, type);
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found for id=" + userId));
 
@@ -150,6 +157,25 @@ public class NotificationService {
         notification.setType(type);
         notification.setRead(false);
         notificationRepository.save(notification);
+    }
+
+    private void validateInterviewNotification(Long applicationId, String type) {
+        if (!"INTERVIEW".equalsIgnoreCase(type)) {
+            return;
+        }
+
+        if (applicationId == null) {
+            throw new IllegalArgumentException(
+                    "Interview notifications must be linked to an application. Schedule the interview first from HR Applications.");
+        }
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+        if (application.getStatus() != ApplicationStatus.INTERVIEW || application.getInterviewScheduledAt() == null) {
+            throw new IllegalArgumentException(
+                    "This interview is not scheduled yet. Use Schedule interview with date, time, and location in HR Applications first.");
+        }
     }
 
     private String positionLabel(Application application) {

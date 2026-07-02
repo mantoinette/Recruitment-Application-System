@@ -5,6 +5,7 @@ import JobDetail from "./pages/public/JobDetail";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 import ApplicantDashboard from "./pages/applicant/Dashboard";
 import ApplicantProfile from "./pages/applicant/Profile";
 import ApplicantStatus from "./pages/applicant/Status";
@@ -103,7 +104,9 @@ function App() {
                     path="/hr/applications"
                     element={
                         <ProtectedRoute allowedRoles={["HR"]}>
-                            <HrApplications />
+                            <ErrorBoundary>
+                                <HrApplications />
+                            </ErrorBoundary>
                         </ProtectedRoute>
                     }
                 />

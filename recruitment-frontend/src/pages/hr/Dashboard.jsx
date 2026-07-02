@@ -39,8 +39,8 @@ const workflowSteps = [
     {
         step: 4,
         title: "Schedule interviews",
-        description: "Set interview date, location, and notes. Applicants are notified to be ready.",
-        link: "/hr/interviews",
+        description: "Open an applicant review, set date, location, and notes. Applicants are notified automatically.",
+        link: "/hr/applications",
         icon: FiCalendar
     }
 ];
@@ -184,13 +184,13 @@ function Dashboard() {
                                     <p className="muted">A rejection reason is required and sent to the applicant immediately.</p>
                                 </div>
                             </div>
-                            <div className="workflow-note">
+                            <Link className="workflow-note workflow-note-link" to="/hr/applications">
                                 <FiCalendar />
                                 <div>
                                     <strong>Schedule interview</strong>
-                                    <p className="muted">Set date, time, and location. Applicant is notified to be interview-ready.</p>
+                                    <p className="muted">Applications → Review → Schedule interview. Set date, time, and location.</p>
                                 </div>
-                            </div>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -228,7 +228,10 @@ function Dashboard() {
                                                 </span>
                                             </td>
                                             <td>
-                                                <Link className="secondary-button small" to="/hr/applications">
+                                                <Link
+                                                    className="secondary-button small"
+                                                    to={`/hr/applications?review=${application.id}`}
+                                                >
                                                     <FiEye /> Review
                                                 </Link>
                                             </td>

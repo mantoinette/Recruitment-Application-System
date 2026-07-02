@@ -68,4 +68,9 @@ public class NotificationController {
         notificationService.markAllAsRead(userId);
         return ResponseEntity.noContent().build();
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleBadRequest(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(exception.getMessage());
+    }
 }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     FiBell,
     FiCalendar,
@@ -12,8 +13,24 @@ import {
 import api from "../../api/axios";
 import HrLayout from "../../layouts/HrLayout";
 import { fileDownloadUrl, statusClass, statusLabel } from "../../utils/statusHelpers";
+import { getApiErrorMessage } from "../../utils/apiError";
+
+function toDateTimeLocalValue(value) {
+    if (!value) {
+        return "";
+    }
+
+    if (typeof value === "string") {
+        return value.slice(0, 16);
+    }
+
+    return "";
+}
 
 function Applications() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const pendingReviewId = useRef(null);
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -102,7 +119,7 @@ function Applications() {
             {
                 key: "INTERVIEW_REMINDER",
                 label: "Interview reminder",
-                type: "INTERVIEW",
+                type: "INFO",
                 title: ({ name, position }) => `Interview reminder: ${position}`,
                 message: ({ name, position }) =>
                     `Hello ${name}, this is a friendly reminder about your upcoming interview for the ${position} position. Please review the interview details in your application and arrive prepared. If you need to reschedule, reply as soon as possible.`
@@ -168,12 +185,6 @@ function Applications() {
         }
     };
 
-    useEffect(() => {
-        loadApplications();
-    }, [statusFilter]);
-
-    const filteredCount = useMemo(() => applications.length, [applications]);
-
     const openDetails = async (applicationId) => {
         try {
             const response = await api.get(`/applications/${applicationId}`);
@@ -184,9 +195,7 @@ function Applications() {
             setShowRejectModal(false);
             setActionMessage("");
             setInterviewForm({
-                scheduledAt: application.interviewScheduledAt
-                    ? application.interviewScheduledAt.slice(0, 16)
-                    : "",
+                scheduledAt: toDateTimeLocalValue(application.interviewScheduledAt),
                 location: application.interviewLocation || "",
                 notes: application.interviewNotes || ""
             });
@@ -206,6 +215,7 @@ function Applications() {
             }
         } catch (error) {
             console.error("Failed to load application details", error);
+            setLoadError("Could not open this application. Please try again.");
         }
     };
 
@@ -223,6 +233,29 @@ function Applications() {
         await loadApplications();
     };
 
+    useEffect(() => {
+        loadApplications();
+    }, [statusFilter]);
+
+    useEffect(() => {
+        const reviewId = new URLSearchParams(location.search).get("review");
+        if (!reviewId || loading || selected) {
+            return;
+        }
+
+        const applicationId = Number(reviewId);
+        if (!Number.isFinite(applicationId) || pendingReviewId.current === applicationId) {
+            return;
+        }
+
+        pendingReviewId.current = applicationId;
+        openDetails(applicationId).finally(() => {
+            navigate("/hr/applications", { replace: true });
+        });
+    }, [location.search, loading, selected, navigate]);
+
+    const filteredCount = useMemo(() => applications.length, [applications]);
+
     const showSuccess = (text) => {
         setActionMessageType("success");
         setActionMessage(text);
@@ -230,7 +263,7 @@ function Applications() {
 
     const showError = (text) => {
         setActionMessageType("error");
-        setActionMessage(text);
+        setActionMessage(typeof text === "string" ? text : getApiErrorMessage({ response: { data: text } }));
     };
 
     const handleReview = async () => {
@@ -241,7 +274,7 @@ function Applications() {
             showSuccess("Application marked as Under Review. Applicant has been notified.");
             await refreshSelected(selected.id);
         } catch (error) {
-            showError(error.response?.data || "Update failed.");
+            showError(getApiErrorMessage(error, "Update failed."));
         } finally {
             setActionLoading(false);
         }
@@ -255,7 +288,7 @@ function Applications() {
             showSuccess("Application approved. Applicant has been notified to prepare for the next stage.");
             await refreshSelected(selected.id);
         } catch (error) {
-            showError(error.response?.data || "Approval failed.");
+            showError(getApiErrorMessage(error, "Approval failed."));
         } finally {
             setActionLoading(false);
         }
@@ -276,34 +309,86 @@ function Applications() {
             showSuccess("Application rejected. The reason has been sent to the applicant as a notification.");
             await refreshSelected(selected.id);
         } catch (error) {
-            showError(error.response?.data || "Rejection failed.");
+            showError(getApiErrorMessage(error, "Rejection failed."));
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleScheduleInterview = async () => {
+    const handleScheduleInterview = async (successMessage = "Interview scheduled. Applicant has been notified with date, time, and location.") => {
         if (!selected || !interviewForm.scheduledAt) {
             showError("Interview date and time are required.");
-            return;
+            return false;
         }
 
         if (!interviewForm.location.trim()) {
             showError("Interview location or meeting link is required.");
-            return;
+            return false;
         }
 
         setActionLoading(true);
         try {
             await api.put(`/applications/${selected.id}/interview`, {
-                scheduledAt: interviewForm.scheduledAt,
+                scheduledAt: interviewForm.scheduledAt.length === 16
+                    ? `${interviewForm.scheduledAt}:00`
+                    : interviewForm.scheduledAt,
                 location: interviewForm.location.trim(),
                 notes: interviewForm.notes
             });
-            showSuccess("Interview scheduled. Applicant has been notified with date, time, and location.");
+            showSuccess(successMessage);
             await refreshSelected(selected.id);
+            await loadApplications();
+            return true;
         } catch (error) {
-            showError(error.response?.data || "Interview scheduling failed.");
+            showError(getApiErrorMessage(error, "Interview scheduling failed."));
+            return false;
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleSendNotification = async () => {
+        if (!selected?.id || !selected.user?.id) {
+            showError("Applicant user information is missing. Please reload and try again.");
+            return;
+        }
+
+        if (!notifyDraft.title.trim() || !notifyDraft.message.trim()) {
+            showError("Notification title and message are required.");
+            return;
+        }
+
+        const alreadyScheduled = selected.status === "INTERVIEW" && selected.interviewScheduledAt;
+
+        if (notifyTemplateKey === "INTERVIEW_REMINDER" && !alreadyScheduled) {
+            if (!interviewForm.scheduledAt || !interviewForm.location.trim()) {
+                showError(
+                    "To send an interview reminder, first fill date, time, and location in Schedule interview above, then click Schedule interview & notify applicant."
+                );
+                return;
+            }
+
+            const scheduled = await handleScheduleInterview(
+                "Interview scheduled on HR Interviews. Applicant has been notified with date, time, and location."
+            );
+            if (scheduled) {
+                setNotifyTemplateKey("");
+                setNotifyDraft({ type: "INFO", title: "", message: "" });
+            }
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            await api.post(`/notifications/user/${selected.user.id}`, {
+                applicationId: selected.id,
+                type: notifyDraft.type,
+                title: notifyDraft.title.trim(),
+                message: notifyDraft.message.trim()
+            });
+            showSuccess("Notification sent to applicant successfully.");
+        } catch (error) {
+            showError(getApiErrorMessage(error, "Failed to send notification."));
         } finally {
             setActionLoading(false);
         }
@@ -322,33 +407,6 @@ function Applications() {
             title: template.title({ name: applicantName, position }),
             message: template.message({ name: applicantName, position })
         });
-    };
-
-    const handleSendNotification = async () => {
-        if (!selected?.id || !selected.user?.id) {
-            showError("Applicant user information is missing. Please reload and try again.");
-            return;
-        }
-
-        if (!notifyDraft.title.trim() || !notifyDraft.message.trim()) {
-            showError("Notification title and message are required.");
-            return;
-        }
-
-        setActionLoading(true);
-        try {
-            await api.post(`/notifications/user/${selected.user.id}`, {
-                applicationId: selected.id,
-                type: notifyDraft.type,
-                title: notifyDraft.title.trim(),
-                message: notifyDraft.message.trim()
-            });
-            showSuccess("Notification sent to applicant successfully.");
-        } catch (error) {
-            showError(error.response?.data || "Failed to send notification.");
-        } finally {
-            setActionLoading(false);
-        }
     };
 
     return (
@@ -510,7 +568,9 @@ function Applications() {
 
                         <div className="panel inner-panel interview-panel">
                             <h3 className="panel-title"><FiCalendar /> Schedule interview</h3>
-                            <p className="muted">Set the interview details. The applicant will be notified to be ready at the scheduled time.</p>
+                            <p className="muted">
+                                Required for HR Interviews and dashboard counts. Fill date, time, and location — the applicant is notified automatically.
+                            </p>
                             <div className="form-grid">
                                 <div className="field">
                                     <label htmlFor="scheduledAt">Date & time</label>
@@ -562,7 +622,7 @@ function Applications() {
                                     />
                                 </div>
                             </div>
-                            <button className="primary-button" type="button" onClick={handleScheduleInterview} disabled={actionLoading}>
+                            <button className="primary-button" type="button" onClick={() => handleScheduleInterview()} disabled={actionLoading}>
                                 <FiCalendar /> Schedule interview & notify applicant
                             </button>
                         </div>
@@ -570,8 +630,8 @@ function Applications() {
                         <div className="panel inner-panel interview-panel">
                             <h3 className="panel-title"><FiBell /> Notify applicant</h3>
                             <p className="muted">
-                                Pick a template to prefill a message, then send it to the applicant. Note: this does not schedule an interview —
-                                use the “Schedule interview” panel above to set the date and time.
+                                Send general updates (documents, assessments, follow-ups). For a first interview notice, use Schedule interview above.
+                                Interview reminder only works after an interview is scheduled, or it will schedule one if date and location are filled above.
                             </p>
                             <div className="form-grid">
                                 <div className="field full">
@@ -584,7 +644,7 @@ function Applications() {
                                         <option value="">Select a template</option>
                                         {notificationTemplates.map((template) => (
                                             <option key={template.key} value={template.key}>
-                                                {template.label} (type {template.type})
+                                                {template.label}
                                             </option>
                                         ))}
                                     </select>

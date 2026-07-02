@@ -1,5 +1,7 @@
 export function statusLabel(status) {
-    switch (status) {
+    const value = typeof status === "string" ? status : status?.name;
+
+    switch (value) {
         case "PENDING":
             return "Pending";
         case "UNDER_REVIEW":
@@ -11,12 +13,13 @@ export function statusLabel(status) {
         case "REJECTED":
             return "Rejected";
         default:
-            return status || "Pending";
+            return value || "Pending";
     }
 }
 
 export function statusClass(status) {
-    return (status || "PENDING").toLowerCase().replace(/_/g, "-");
+    const value = typeof status === "string" ? status : status?.name || "PENDING";
+    return value.toLowerCase().replace(/_/g, "-");
 }
 
 export function fileDownloadUrl(path) {

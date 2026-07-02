@@ -55,6 +55,17 @@ public class DatabaseSchemaPatcher implements CommandLineRunner {
                 """);
 
         jdbcTemplate.execute("""
+                ALTER TABLE applications
+                DROP CONSTRAINT IF EXISTS applications_status_check
+                """);
+
+        jdbcTemplate.execute("""
+                ALTER TABLE applications
+                ADD CONSTRAINT applications_status_check
+                CHECK (status IN ('PENDING', 'UNDER_REVIEW', 'INTERVIEW', 'APPROVED', 'REJECTED'))
+                """);
+
+        jdbcTemplate.execute("""
                 ALTER TABLE applicant_profiles
                 ADD COLUMN IF NOT EXISTS nationality VARCHAR(50)
                 """);
