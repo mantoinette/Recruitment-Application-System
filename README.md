@@ -134,13 +134,15 @@ Create a PostgreSQL database:
 CREATE DATABASE recruitment_db;
 ```
 
-Update credentials in `recruitment-system/src/main/resources/application.properties` if needed:
+Update credentials in `recruitment-system/src/main/resources/application.properties` to match **your local** PostgreSQL setup:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/recruitment_db
 spring.datasource.username=postgres
 spring.datasource.password=your_password
 ```
+
+> **Security:** Use placeholders in documentation only. Set your real database password locally in `application.properties` and never commit secrets to Git. For production, use environment variables or a secrets manager instead of hard-coded values.
 
 Hibernate will create tables on first run (`spring.jpa.hibernate.ddl-auto=update`).
 
@@ -239,18 +241,12 @@ Without SMTP, notifications are still stored in the database and visible in the 
 
 ---
 
-## Screenshots
-
-_Add screenshots of the home page, applicant dashboard, HR applications view, and admin panel here._
-
----
-
 ## Author
 
-**Antoinette** — Full-stack recruitment system built as a portfolio and academic project.
+**Antoinette** — Developer of RecruitPro, a production-ready recruitment management platform for real hiring workflows.
 
 ---
 
 ## License
 
-This project is provided for educational and portfolio use. Contact the author before commercial deployment.
+Proprietary. All rights reserved. Contact the author for licensing or deployment inquiries.
