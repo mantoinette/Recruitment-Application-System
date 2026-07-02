@@ -32,7 +32,9 @@ public class ProfileController {
         return Map.of(
                 "profileComplete", profile.isProfileComplete(),
                 "nidVerified", profile.isNidVerified(),
-                "nesaVerified", profile.isNesaVerified()
+                "nesaVerified", profile.isNesaVerified(),
+                "nationality", profile.getNationality() != null ? profile.getNationality() : "",
+                "missing", profileService.getMissingRequirements(userId)
         );
     }
 
@@ -45,6 +47,18 @@ public class ProfileController {
     public ApplicantProfile uploadCv(@PathVariable Long userId, @RequestParam("file") MultipartFile file)
             throws IOException {
         return profileService.uploadCv(userId, file);
+    }
+
+    @PostMapping(value = "/{userId}/degree", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApplicantProfile uploadDegree(@PathVariable Long userId, @RequestParam("file") MultipartFile file)
+            throws IOException {
+        return profileService.uploadDegree(userId, file);
+    }
+
+    @PostMapping(value = "/{userId}/certificates", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApplicantProfile uploadCertificates(@PathVariable Long userId, @RequestParam("file") MultipartFile file)
+            throws IOException {
+        return profileService.uploadCertificates(userId, file);
     }
 
     @PostMapping(value = "/{userId}/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

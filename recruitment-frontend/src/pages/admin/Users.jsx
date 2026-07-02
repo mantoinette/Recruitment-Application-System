@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEdit2, FiTrash2, FiUserPlus } from "react-icons/fi";
+import { FiEdit2, FiKey, FiTrash2, FiUserPlus, FiUserX } from "react-icons/fi";
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 
@@ -14,6 +14,8 @@ function Users() {
     const [users, setUsers] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [editingId, setEditingId] = useState(null);
+    const [resetPasswordId, setResetPasswordId] = useState(null);
+    const [newPassword, setNewPassword] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -31,10 +33,7 @@ function Users() {
     }, []);
 
     const handleChange = (event) => {
-        setForm({
-            ...form,
-            [event.target.name]: event.target.value
-        });
+        setForm({ ...form, [event.target.name]: event.target.value });
     };
 
     const resetForm = () => {
@@ -75,6 +74,32 @@ function Users() {
         });
     };
 
+    const toggleActive = async (user) => {
+        try {
+            await api.patch(`/users/${user.id}/active?active=${!user.active}`);
+            setMessage(`User ${user.active ? "deactivated" : "activated"} successfully.`);
+            await loadUsers();
+        } catch (error) {
+            setMessage(error.response?.data || "Failed to update user status.");
+        }
+    };
+
+    const handleResetPassword = async (event) => {
+        event.preventDefault();
+        if (!resetPasswordId || !newPassword.trim()) {
+            return;
+        }
+
+        try {
+            await api.put(`/users/${resetPasswordId}/reset-password`, { password: newPassword });
+            setMessage("Password reset successfully.");
+            setResetPasswordId(null);
+            setNewPassword("");
+        } catch (error) {
+            setMessage(error.response?.data || "Password reset failed.");
+        }
+    };
+
     const handleDelete = async (userId) => {
         if (!window.confirm("Delete this user?")) {
             return;
@@ -97,7 +122,7 @@ function Users() {
                         <div className="page-kicker">Administration</div>
                         <h1 className="page-title">Manage system users</h1>
                         <p className="page-copy">
-                            Create, update, and remove applicant, HR, and admin accounts.
+                            Create, edit, activate/deactivate, reset passwords, and delete HR and applicant accounts.
                         </p>
                     </div>
                 </div>
@@ -112,37 +137,17 @@ function Users() {
                             <div className="form-grid">
                                 <div className="field full">
                                     <label htmlFor="fullName">Full name</label>
-                                    <input
-                                        id="fullName"
-                                        name="fullName"
-                                        value={form.fullName}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input id="fullName" name="fullName" value={form.fullName} onChange={handleChange} required />
                                 </div>
                                 <div className="field full">
                                     <label htmlFor="email">Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input id="email" type="email" name="email" value={form.email} onChange={handleChange} required />
                                 </div>
                                 <div className="field full">
                                     <label htmlFor="password">
                                         Password {editingId ? "(leave blank to keep current)" : ""}
                                     </label>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        name="password"
-                                        value={form.password}
-                                        onChange={handleChange}
-                                        required={!editingId}
-                                    />
+                                    <input id="password" type="password" name="password" value={form.password} onChange={handleChange} required={!editingId} />
                                 </div>
                                 <div className="field full">
                                     <label htmlFor="role">Role</label>
@@ -158,15 +163,33 @@ function Users() {
 
                             <div className="form-actions">
                                 {editingId && (
-                                    <button className="secondary-button" type="button" onClick={resetForm}>
-                                        Cancel
-                                    </button>
+                                    <button className="secondary-button" type="button" onClick={resetForm}>Cancel</button>
                                 )}
                                 <button className="primary-button" type="submit" disabled={loading}>
                                     {loading ? "Saving..." : editingId ? "Update user" : "Create user"}
                                 </button>
                             </div>
                         </form>
+
+                        {resetPasswordId && (
+                            <form className="reset-password-form" onSubmit={handleResetPassword}>
+                                <h3 className="panel-title"><FiKey /> Reset password</h3>
+                                <div className="field full">
+                                    <label htmlFor="newPassword">New password</label>
+                                    <input
+                                        id="newPassword"
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(event) => setNewPassword(event.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-actions">
+                                    <button className="secondary-button" type="button" onClick={() => setResetPasswordId(null)}>Cancel</button>
+                                    <button className="primary-button" type="submit">Reset password</button>
+                                </div>
+                            </form>
+                        )}
                     </div>
 
                     <div className="panel">
@@ -177,6 +200,7 @@ function Users() {
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -186,19 +210,22 @@ function Users() {
                                         <td>{user.fullName}</td>
                                         <td>{user.email}</td>
                                         <td>{user.role}</td>
+                                        <td>
+                                            <span className={`badge ${user.active === false ? "rejected" : "approved"}`}>
+                                                {user.active === false ? "Inactive" : "Active"}
+                                            </span>
+                                        </td>
                                         <td className="table-actions">
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={() => startEdit(user)}
-                                            >
+                                            <button className="secondary-button" type="button" onClick={() => startEdit(user)} title="Edit">
                                                 <FiEdit2 />
                                             </button>
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={() => handleDelete(user.id)}
-                                            >
+                                            <button className="secondary-button" type="button" onClick={() => setResetPasswordId(user.id)} title="Reset password">
+                                                <FiKey />
+                                            </button>
+                                            <button className="secondary-button" type="button" onClick={() => toggleActive(user)} title="Activate/Deactivate">
+                                                <FiUserX />
+                                            </button>
+                                            <button className="secondary-button" type="button" onClick={() => handleDelete(user.id)} title="Delete">
                                                 <FiTrash2 />
                                             </button>
                                         </td>

@@ -127,6 +127,11 @@ public class AuthService {
                     "Invalid password");
         }
 
+        if (!user.isActive()) {
+            throw new IllegalArgumentException(
+                    "Your account has been deactivated. Contact the administrator.");
+        }
+
         // Return only the data needed by frontend
         return new LoginResponse(
 

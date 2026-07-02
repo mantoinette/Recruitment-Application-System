@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
 import { getUser } from "../../utils/auth";
+import { statusClass, statusLabel } from "../../utils/statusHelpers";
 
 function Status() {
     const user = getUser() || {};
@@ -38,7 +39,7 @@ function Status() {
                         <div className="page-kicker">Status</div>
                         <h1 className="page-title">Track your applications</h1>
                         <p className="page-copy">
-                            See whether your submitted application is pending, under review, approved, or rejected.
+                            View pending, under review, interview, approval, and rejection updates for each application.
                         </p>
                     </div>
                 </div>
@@ -54,33 +55,50 @@ function Status() {
 
                     {!loading && !error && applications.length > 0 && (
                         <div className="status-list">
-                            {applications.map((application) => {
-                                const status = (application.status || "PENDING").toLowerCase();
-
-                                return (
-                                    <div className="status-item" key={application.id}>
-                                        <div>
-                                            <div className="step-title">
-                                                {application.positionApplied || `Application #${application.id}`}
-                                            </div>
-                                            <div className="muted">
-                                                Submitted {application.createdAt
-                                                    ? new Date(application.createdAt).toLocaleDateString()
-                                                    : "recently"}
-                                            </div>
-                                            <div className="muted">
-                                                {application.education || "Education not provided"}
-                                            </div>
-                                            {application.rejectionReason && (
-                                                <div className="message error">
-                                                    Reason: {application.rejectionReason}
-                                                </div>
-                                            )}
+                            {applications.map((application) => (
+                                <div className="status-item" key={application.id}>
+                                    <div>
+                                        <div className="step-title">
+                                            {application.positionApplied || application.job?.title || `Application #${application.id}`}
                                         </div>
-                                        <div className={`badge ${status}`}>{application.status}</div>
+                                        <div className="muted">
+                                            Submitted {application.createdAt
+                                                ? new Date(application.createdAt).toLocaleDateString()
+                                                : "recently"}
+                                        </div>
+                                        <div className="muted">
+                                            {application.education || "Education not provided"}
+                                        </div>
+
+                                        {application.status === "INTERVIEW" && (
+                                            <div className="message interview-notice">
+                                                Interview scheduled: {application.interviewScheduledAt
+                                                    ? new Date(application.interviewScheduledAt).toLocaleString()
+                                                    : "details pending"}
+                                                {application.interviewLocation && (
+                                                    <div>Location: {application.interviewLocation}</div>
+                                                )}
+                                                {application.interviewNotes && (
+                                                    <div>Notes: {application.interviewNotes}</div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {application.status === "APPROVED" && (
+                                            <div className="message">Your application has been approved.</div>
+                                        )}
+
+                                        {application.rejectionReason && (
+                                            <div className="message error">
+                                                Rejection reason: {application.rejectionReason}
+                                            </div>
+                                        )}
                                     </div>
-                                );
-                            })}
+                                    <div className={`badge ${statusClass(application.status)}`}>
+                                        {statusLabel(application.status)}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

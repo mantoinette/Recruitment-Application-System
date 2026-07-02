@@ -138,6 +138,253 @@
     background: #e2e8f0;
 }
 
+/* ===== VACANCY MANAGER ===== */
+.vacancy-page .vacancy-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 20px;
+}
+
+.vacancy-stat {
+    border-left: 4px solid #2f6fed;
+}
+
+.vacancy-stat.open {
+    border-left-color: #16a34a;
+}
+
+.vacancy-stat.closed {
+    border-left-color: #dc2626;
+}
+
+.vacancy-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.vacancy-form-panel {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.vacancy-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.vacancy-form .form-section {
+    background: #f8fafc;
+    border: 1px solid #e8edf4;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.vacancy-form .form-section-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.vacancy-form-actions {
+    margin-top: 4px;
+}
+
+.vacancy-list-panel {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vacancy-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.vacancy-search {
+    min-width: 260px;
+    flex: 1;
+    max-width: 360px;
+}
+
+.vacancy-cards {
+    display: grid;
+    gap: 14px;
+}
+
+.vacancy-card {
+    border: 1px solid #e4e8ef;
+    border-radius: 12px;
+    padding: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vacancy-card:hover {
+    border-color: #c7d8f8;
+    box-shadow: 0 10px 24px rgba(20, 31, 49, 0.06);
+}
+
+.vacancy-card.editing {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.vacancy-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.vacancy-card-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #172033;
+}
+
+.vacancy-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vacancy-card-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vacancy-tag {
+    background: #eef3fb;
+    color: #24415f;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.vacancy-card-copy {
+    margin: 14px 0 0;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.vacancy-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #e8edf4;
+}
+
+.vacancy-deadline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.vacancy-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.secondary-button.small,
+.danger-button.small {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.danger-button {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff1f2;
+    color: #be123c;
+}
+
+.danger-button:hover {
+    background: #ffe4e6;
+}
+
+.icon-button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e4e8ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #64748b;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    background: #f8fafc;
+    color: #172033;
+}
+
+.vacancy-empty {
+    text-align: center;
+    padding: 48px 24px;
+    border: 1px dashed #d8dee8;
+    border-radius: 12px;
+    color: #64748b;
+}
+
+.vacancy-empty svg {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.vacancy-empty h3 {
+    margin: 0 0 8px;
+    color: #172033;
+}
+
+.vacancy-list-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #ecfdf5;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
 
@@ -157,4 +404,204 @@
         flex-direction: row;
         overflow-x: auto;
     }
+
+    .vacancy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .vacancy-form-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .vacancy-page .vacancy-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .vacancy-list-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .vacancy-search {
+        max-width: none;
+    }
+}
+
+/* ===== HR RECRUITMENT WORKFLOW ===== */
+.recruitment-workflow-panel {
+    margin-bottom: 20px;
+}
+
+.workflow-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.workflow-outcome {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    text-align: right;
+}
+
+.workflow-outcome-label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.workflow-steps {
+    display: grid;
+    gap: 12px;
+}
+
+.workflow-step-card {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 16px 18px;
+    border: 1px solid #e4e8ef;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    background: #fafbfd;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workflow-step-button {
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+.workflow-step-card:hover {
+    border-color: #86efac;
+    box-shadow: 0 10px 24px rgba(20, 31, 49, 0.06);
+}
+
+.workflow-step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+}
+
+.workflow-step-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    color: #172033;
+    margin-bottom: 4px;
+}
+
+.workflow-step-arrow {
+    color: #16a34a;
+    font-size: 18px;
+}
+
+.workflow-notes {
+    display: grid;
+    gap: 14px;
+}
+
+.workflow-note {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 14px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e8edf4;
+}
+
+.workflow-note svg {
+    color: #16a34a;
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+.latest-applications-table-wrap {
+    overflow-x: auto;
+}
+
+.review-modal {
+    max-width: 980px;
+}
+
+.review-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e8edf4;
+}
+
+.review-status-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.interview-panel {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+}
+
+.review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.reject-overlay {
+    z-index: 1200;
+}
+
+.reject-modal {
+    max-width: 560px;
+}
+
+.notification-item.unread {
+    border-width: 2px;
+}
+
+.notification-unread-dot {
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #ffffff;
+    background: #2563eb;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.notification-time {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.notification-item.read {
+    opacity: 0.82;
 }

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { FiArrowLeft, FiBriefcase, FiCalendar, FiMapPin } from "react-icons/fi";
 import api from "../../api/axios";
+import PublicFooter from "../../components/PublicFooter";
+import PublicHeader from "../../components/PublicHeader";
 import { getUser } from "../../utils/auth";
 import "../../assets/public.css";
 
@@ -30,7 +32,7 @@ function JobDetail() {
 
     const handleApply = () => {
         if (!user) {
-            navigate("/register", { state: { jobId: id } });
+            navigate("/login", { state: { from: `/applicant/apply/${id}` } });
             return;
         }
 
@@ -45,6 +47,7 @@ function JobDetail() {
     if (loading) {
         return (
             <div className="public-page">
+                <PublicHeader />
                 <main className="job-detail-page"><p className="muted">Loading job details...</p></main>
             </div>
         );
@@ -53,6 +56,7 @@ function JobDetail() {
     if (!job) {
         return (
             <div className="public-page">
+                <PublicHeader />
                 <main className="job-detail-page">
                     <p className="muted">Job vacancy not found.</p>
                     <Link to="/">Back to vacancies</Link>
@@ -63,19 +67,10 @@ function JobDetail() {
 
     return (
         <div className="public-page">
-            <header className="public-header">
-                <Link className="public-brand" to="/">
-                    <strong>RecruitPro</strong>
-                    <span>Professional Recruitment Platform</span>
-                </Link>
-                <nav className="public-nav">
-                    <Link to="/login">Login</Link>
-                    <Link className="public-button primary" to="/register">Register</Link>
-                </nav>
-            </header>
+            <PublicHeader />
 
             <main className="job-detail-page">
-                <Link className="back-link" to="/">
+                <Link className="back-link" to="/#vacancies">
                     <FiArrowLeft /> Back to vacancies
                 </Link>
 
@@ -109,12 +104,14 @@ function JobDetail() {
                         </button>
                         {!user && (
                             <p className="muted">
-                                You will be asked to register or log in before applying.
+                                You must log in as an applicant to apply. New users can register first.
                             </p>
                         )}
                     </div>
                 </div>
             </main>
+
+            <PublicFooter />
         </div>
     );
 }

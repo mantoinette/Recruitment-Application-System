@@ -1,5 +1,13 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiClipboard, FiFileText, FiHome, FiLogOut, FiUser } from "react-icons/fi";
+import {
+    FiBell,
+    FiBriefcase,
+    FiClipboard,
+    FiFileText,
+    FiHome,
+    FiLogOut,
+    FiUser
+} from "react-icons/fi";
 import "../assets/applicant.css";
 
 function ApplicantLayout({ children, title = "Applicant Portal" }) {
@@ -23,7 +31,7 @@ function ApplicantLayout({ children, title = "Applicant Portal" }) {
         <div className="app-shell">
             <aside className="app-sidebar">
                 <div className="brand-block">
-                    <h2 className="brand-title">Recruitment</h2>
+                    <h2 className="brand-title">RecruitPro</h2>
                     <div className="brand-subtitle">Applicant workspace</div>
                 </div>
 
@@ -31,17 +39,20 @@ function ApplicantLayout({ children, title = "Applicant Portal" }) {
                     <NavLink to="/applicant/dashboard">
                         <FiHome /> Dashboard
                     </NavLink>
-                    <NavLink to="/applicant/apply">
-                        <FiFileText /> Apply
-                    </NavLink>
-                    <NavLink to="/applicant/status">
-                        <FiClipboard /> Status
-                    </NavLink>
                     <NavLink to="/applicant/profile">
                         <FiUser /> Profile
                     </NavLink>
-                    <NavLink to="/">
-                        <FiFileText /> Vacancies
+                    <NavLink to="/applicant/jobs">
+                        <FiBriefcase /> Available Jobs
+                    </NavLink>
+                    <NavLink to="/applicant/applications">
+                        <FiFileText /> My Applications
+                    </NavLink>
+                    <NavLink to="/applicant/status">
+                        <FiClipboard /> Application Status
+                    </NavLink>
+                    <NavLink to="/applicant/notifications">
+                        <FiBell /> Notifications
                     </NavLink>
                 </nav>
 

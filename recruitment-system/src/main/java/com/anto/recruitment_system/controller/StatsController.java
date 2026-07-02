@@ -1,6 +1,7 @@
 package com.anto.recruitment_system.controller;
 
 import com.anto.recruitment_system.dto.DashboardStats;
+import com.anto.recruitment_system.dto.DetailedStats;
 import com.anto.recruitment_system.service.StatsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,5 +20,10 @@ public class StatsController {
     @GetMapping
     public DashboardStats getDashboardStats() {
         return statsService.getDashboardStats();
+    }
+
+    @GetMapping("/detailed")
+    public DetailedStats getDetailedStats() {
+        return statsService.getDetailedStats();
     }
 }

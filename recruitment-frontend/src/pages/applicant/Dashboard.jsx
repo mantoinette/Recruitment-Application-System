@@ -6,6 +6,7 @@ import ApplicantLayout from "../../layouts/ApplicantLayout";
 import StatBarChart from "../../components/StatBarChart";
 import ActivityFeed from "../../components/ActivityFeed";
 import { getUser } from "../../utils/auth";
+import { statusClass, statusLabel } from "../../utils/statusHelpers";
 
 function Dashboard() {
     const user = getUser() || {};
@@ -36,11 +37,15 @@ function Dashboard() {
 
     const total = applications.length;
     const pending = applications.filter((a) => a.status === "PENDING").length;
+    const underReview = applications.filter((a) => a.status === "UNDER_REVIEW").length;
+    const interview = applications.filter((a) => a.status === "INTERVIEW").length;
     const approved = applications.filter((a) => a.status === "APPROVED").length;
     const rejected = applications.filter((a) => a.status === "REJECTED").length;
 
     const chartItems = [
         { label: "Pending", value: pending, color: "#f59e0b" },
+        { label: "Under Review", value: underReview, color: "#2563eb" },
+        { label: "Interview", value: interview, color: "#7c3aed" },
         { label: "Approved", value: approved, color: "#16a34a" },
         { label: "Rejected", value: rejected, color: "#dc2626" }
     ];
@@ -48,9 +53,11 @@ function Dashboard() {
     const activities = applications.slice(0, 5).map((app) => ({
         id: app.id,
         title: app.positionApplied || app.job?.title || `Application #${app.id}`,
-        subtitle: "Your submitted application",
-        status: app.status,
-        statusClass: (app.status || "PENDING").toLowerCase(),
+        subtitle: app.status === "INTERVIEW" && app.interviewScheduledAt
+            ? `Interview: ${new Date(app.interviewScheduledAt).toLocaleString()}`
+            : "Your submitted application",
+        status: statusLabel(app.status),
+        statusClass: statusClass(app.status),
         color: "#2563eb"
     }));
 
@@ -65,7 +72,7 @@ function Dashboard() {
                             Complete your profile, browse vacancies, and track your applications.
                         </p>
                     </div>
-                    <Link className="primary-button" to="/">
+                    <Link className="primary-button" to="/applicant/jobs">
                         Browse jobs <FiArrowRight />
                     </Link>
                 </div>
@@ -118,10 +125,10 @@ function Dashboard() {
                         <Link className="quick-link-card" to="/applicant/profile">
                             <FiCheckCircle /> Update profile
                         </Link>
-                        <Link className="quick-link-card" to="/applicant/status">
-                            <FiClock /> View status
+                        <Link className="quick-link-card" to="/applicant/applications">
+                            <FiClock /> My applications
                         </Link>
-                        <Link className="quick-link-card" to="/">
+                        <Link className="quick-link-card" to="/applicant/jobs">
                             <FiBriefcase /> Browse vacancies
                         </Link>
                     </div>

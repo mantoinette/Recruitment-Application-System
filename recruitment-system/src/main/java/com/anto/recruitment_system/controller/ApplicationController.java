@@ -1,6 +1,8 @@
 package com.anto.recruitment_system.controller;
 
+import com.anto.recruitment_system.dto.InterviewRequest;
 import com.anto.recruitment_system.entity.Application;
+import com.anto.recruitment_system.entity.ApplicationStatus;
 import com.anto.recruitment_system.service.ApplicationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +47,18 @@ public class ApplicationController {
         return applicationService.getLatestTenSortedAlphabetically();
     }
 
+    @GetMapping("/hr/all")
+    public List<Application> getAllApplicationsForHr(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status) {
+        return applicationService.getAllSortedAlphabetically(search, status);
+    }
+
+    @GetMapping("/hr/interviews")
+    public List<Application> getInterviewApplications() {
+        return applicationService.getInterviewApplications();
+    }
+
     @GetMapping("/hr/approved")
     public List<Application> getApprovedApplications() {
         return applicationService.getApprovedApplications();
@@ -76,6 +90,20 @@ public class ApplicationController {
             @PathVariable Long id,
             @RequestParam String reason) {
         return applicationService.rejectApplication(id, reason);
+    }
+
+    @PutMapping("/{id}/status")
+    public Application updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        return applicationService.updateStatus(id, ApplicationStatus.valueOf(status));
+    }
+
+    @PutMapping("/{id}/interview")
+    public Application scheduleInterview(
+            @PathVariable Long id,
+            @RequestBody InterviewRequest request) {
+        return applicationService.scheduleInterview(id, request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

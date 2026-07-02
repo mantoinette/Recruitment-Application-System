@@ -1,13 +1,16 @@
 import { useState } from "react";
 import api from "../../api/axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FiCheckCircle, FiLock, FiLogIn, FiMail } from "react-icons/fi";
 import { getRoleRoute } from "../../utils/auth";
+import PublicFooter from "../../components/PublicFooter";
+import PublicHeader from "../../components/PublicHeader";
 import "../../assets/public.css";
 
 function Login() {
 
     const navigate = useNavigate();
+    const location = useLocation();
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -36,7 +39,13 @@ function Login() {
 
             // save user in local storage
             localStorage.setItem("user", JSON.stringify(loggedInUser));
-            navigate(getRoleRoute(loggedInUser.role));
+
+            const redirectTo = location.state?.from;
+            if (redirectTo && loggedInUser.role === "APPLICANT") {
+                navigate(redirectTo);
+            } else {
+                navigate(getRoleRoute(loggedInUser.role));
+            }
 
         } catch (error) {
 
@@ -54,20 +63,7 @@ function Login() {
 
     return (
         <div className="public-page">
-
-            <header className="public-header">
-                <Link className="public-brand" to="/">
-                    <strong>RecruitPro</strong>
-                    <span>Professional Recruitment Platform</span>
-                </Link>
-
-                <nav className="public-nav">
-                    <Link to="/">Home</Link>
-                    <Link className="public-button primary" to="/register">
-                        Register
-                    </Link>
-                </nav>
-            </header>
+            <PublicHeader />
 
             <main className="auth-page">
 
@@ -167,6 +163,7 @@ function Login() {
 
             </main>
 
+            <PublicFooter />
         </div>
     );
 }

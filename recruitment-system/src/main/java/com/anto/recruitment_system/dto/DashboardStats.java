@@ -9,7 +9,8 @@ public class DashboardStats {
 
     private long totalApplications;
     private long pendingApplications;
-    private long reviewedApplications;
+    private long underReviewApplications;
+    private long interviewApplications;
     private long approvedApplications;
     private long rejectedApplications;
     private long totalUsers;

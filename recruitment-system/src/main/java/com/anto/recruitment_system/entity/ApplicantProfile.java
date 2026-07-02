@@ -21,11 +21,16 @@ public class ApplicantProfile {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
+    private String nationality;
     private String nationalId;
     private String phone;
     private String address;
+    private String district;
+    private String sector;
     private String dateOfBirth;
     private String gender;
+    private String school;
+    private String graduationYear;
     private String education;
     private String nesaGrade;
     private String nesaOption;
@@ -35,9 +40,14 @@ public class ApplicantProfile {
     private String skills;
 
     @Column(length = 2000)
+    private String professionalSummary;
+
+    @Column(length = 2000)
     private String certifications;
 
     private String cvUrl;
+    private String degreeUrl;
+    private String certificatesUrl;
     private String supportingDocumentUrl;
 
     private boolean nidVerified;

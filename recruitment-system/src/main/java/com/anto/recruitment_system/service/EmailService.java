@@ -84,6 +84,43 @@ public class EmailService {
         );
     }
 
+    public void sendInterviewScheduledEmail(Application application) {
+        String when = application.getInterviewScheduledAt() != null
+                ? application.getInterviewScheduledAt().toString().replace("T", " ")
+                : "To be confirmed";
+        String location = application.getInterviewLocation() == null || application.getInterviewLocation().isBlank()
+                ? "Location will be shared separately"
+                : application.getInterviewLocation();
+        String notes = application.getInterviewNotes() == null || application.getInterviewNotes().isBlank()
+                ? "None"
+                : application.getInterviewNotes();
+
+        sendApplicationEmail(
+                application,
+                "Interview scheduled - please be ready",
+                """
+                        Dear %s,
+
+                        Your application has progressed to the interview stage.
+
+                        Application ID: %s
+                        Status: %s
+                        Position: %s
+                        Interview date & time: %s
+                        Location: %s
+                        Notes: %s
+
+                        Please be ready for your interview and check your notifications in the recruitment portal.
+
+                        Recruitment Team
+                        """,
+                application.getPositionApplied() != null ? application.getPositionApplied() : "Applied position",
+                when,
+                location,
+                notes
+        );
+    }
+
     private void sendApplicationEmail(Application application, String subject, String bodyTemplate, Object... extraValues) {
         User user = application.getUser();
 

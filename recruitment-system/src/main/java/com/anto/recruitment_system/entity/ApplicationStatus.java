@@ -2,7 +2,8 @@ package com.anto.recruitment_system.entity;
 
 public enum ApplicationStatus {
     PENDING,
-    REVIEWED,
+    UNDER_REVIEW,
+    INTERVIEW,
     APPROVED,
     REJECTED
 }

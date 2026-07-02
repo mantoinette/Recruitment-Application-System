@@ -2,6 +2,8 @@ import { useState } from "react";
 import api from "../../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 import { FiCheckCircle, FiLock, FiMail, FiUser, FiUserPlus } from "react-icons/fi";
+import PublicFooter from "../../components/PublicFooter";
+import PublicHeader from "../../components/PublicHeader";
 import "../../assets/public.css";
 
 const roleDescriptions = {
@@ -54,17 +56,7 @@ function Register() {
 
     return (
         <div className="public-page">
-            <header className="public-header">
-                <Link className="public-brand" to="/">
-                    <strong>RecruitPro</strong>
-                    <span>Professional Recruitment Platform</span>
-                </Link>
-
-                <nav className="public-nav">
-                    <Link to="/">Home</Link>
-                    <Link className="public-button primary" to="/login">Login</Link>
-                </nav>
-            </header>
+            <PublicHeader />
 
             <main className="auth-page">
                 <section className="auth-card-wrap">
@@ -171,6 +163,8 @@ function Register() {
                     </div>
                 </section>
             </main>
+
+            <PublicFooter />
         </div>
     );
 }

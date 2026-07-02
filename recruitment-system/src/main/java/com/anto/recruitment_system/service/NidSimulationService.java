@@ -17,7 +17,9 @@ public class NidSimulationService {
                     "Jean Claude Uwimana",
                     "1998-04-12",
                     "Male",
-                    "Kigali, Gasabo",
+                    "Gasabo",
+                    "Kimironko",
+                    "Kigali, Gasabo, Kimironko",
                     "Profile retrieved from NID registry"
             ),
             "1199770023456789", new NidProfileResponse(
@@ -25,7 +27,9 @@ public class NidSimulationService {
                     "Marie Claire Mukamana",
                     "1997-08-21",
                     "Female",
-                    "Kigali, Kicukiro",
+                    "Kicukiro",
+                    "Gikondo",
+                    "Kigali, Kicukiro, Gikondo",
                     "Profile retrieved from NID registry"
             ),
             "1199660034567890", new NidProfileResponse(
@@ -33,7 +37,9 @@ public class NidSimulationService {
                     "Patrick Nshimiyimana",
                     "1996-11-03",
                     "Male",
-                    "Musanze, Northern Province",
+                    "Musanze",
+                    "Muhoza",
+                    "Musanze, Northern Province, Muhoza",
                     "Profile retrieved from NID registry"
             )
     );
@@ -59,7 +65,9 @@ public class NidSimulationService {
                 "Verified Applicant",
                 "1999-01-01",
                 "Not specified",
-                "Rwanda",
+                "Kigali",
+                "Nyarugenge",
+                "Kigali, Nyarugenge",
                 "Profile retrieved from NID registry (simulated)"
         );
     }

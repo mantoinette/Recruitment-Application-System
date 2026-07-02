@@ -1,14 +1,18 @@
 package com.anto.recruitment_system.config;
 
+import com.anto.recruitment_system.entity.Department;
 import com.anto.recruitment_system.entity.JobStatus;
 import com.anto.recruitment_system.entity.JobVacancy;
 import com.anto.recruitment_system.entity.Role;
 import com.anto.recruitment_system.entity.User;
+import com.anto.recruitment_system.repository.DepartmentRepository;
 import com.anto.recruitment_system.repository.JobVacancyRepository;
 import com.anto.recruitment_system.repository.UserRepository;
+import com.anto.recruitment_system.service.SystemSettingsService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
@@ -17,8 +21,11 @@ import java.time.LocalDate;
 public class DataSeeder {
 
     @Bean
+    @Order(1)
     CommandLineRunner seedData(UserRepository userRepository,
                                JobVacancyRepository jobVacancyRepository,
+                               DepartmentRepository departmentRepository,
+                               SystemSettingsService systemSettingsService,
                                BCryptPasswordEncoder passwordEncoder) {
         return args -> {
             seedUser(userRepository, passwordEncoder,
@@ -26,6 +33,8 @@ public class DataSeeder {
             seedUser(userRepository, passwordEncoder,
                     "System Administrator", "admin@gmail.com", "admin1234", Role.ADMIN);
             seedJobs(jobVacancyRepository);
+            seedDepartments(departmentRepository);
+            systemSettingsService.seedDefaults();
         };
     }
 
@@ -41,6 +50,7 @@ public class DataSeeder {
             user.setEmail(email);
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(role);
+            user.setActive(true);
             userRepository.save(user);
         }
     }
@@ -113,5 +123,25 @@ public class DataSeeder {
         job.setDeadline(deadline);
         job.setStatus(JobStatus.OPEN);
         return job;
+    }
+
+    private void seedDepartments(DepartmentRepository departmentRepository) {
+        if (departmentRepository.count() > 0) {
+            return;
+        }
+
+        saveDepartment(departmentRepository, "Information Technology", "Software, infrastructure, and digital systems");
+        saveDepartment(departmentRepository, "Human Resources", "Recruitment, employee relations, and talent management");
+        saveDepartment(departmentRepository, "Analytics", "Data analysis, reporting, and business intelligence");
+        saveDepartment(departmentRepository, "Product Design", "UI/UX, product research, and design systems");
+        saveDepartment(departmentRepository, "Finance", "Budgeting, payroll, and financial planning");
+    }
+
+    private void saveDepartment(DepartmentRepository repository, String name, String description) {
+        Department department = new Department();
+        department.setName(name);
+        department.setDescription(description);
+        department.setActive(true);
+        repository.save(department);
     }
 }

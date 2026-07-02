@@ -1,14 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight } from "react-icons/fi";
+import {
+    FiArrowRight,
+    FiCalendar,
+    FiCheckCircle,
+    FiClipboard,
+    FiEye,
+    FiUsers,
+    FiXCircle
+} from "react-icons/fi";
 import api from "../../api/axios";
 import HrLayout from "../../layouts/HrLayout";
 import StatBarChart from "../../components/StatBarChart";
-import ActivityFeed from "../../components/ActivityFeed";
+import { statusClass, statusLabel } from "../../utils/statusHelpers";
+
+const workflowSteps = [
+    {
+        step: 1,
+        title: "Review applications",
+        description: "Open applicant profiles, verify documents, and mark cases under review.",
+        link: "/hr/applications",
+        icon: FiClipboard
+    },
+    {
+        step: 2,
+        title: "View latest 10",
+        description: "Monitor the most recent submissions sorted alphabetically for quick triage.",
+        link: "#latest-applications",
+        icon: FiUsers
+    },
+    {
+        step: 3,
+        title: "Approve / reject",
+        description: "Approve successful candidates or reject with a clear reason sent to the applicant.",
+        link: "/hr/applications",
+        icon: FiCheckCircle
+    },
+    {
+        step: 4,
+        title: "Schedule interviews",
+        description: "Set interview date, location, and notes. Applicants are notified to be ready.",
+        link: "/hr/interviews",
+        icon: FiCalendar
+    }
+];
 
 function Dashboard() {
     const [stats, setStats] = useState(null);
     const [applications, setApplications] = useState([]);
+    const latestRef = useRef(null);
 
     useEffect(() => {
         const loadDashboard = async () => {
@@ -30,19 +70,11 @@ function Dashboard() {
 
     const chartItems = [
         { label: "Pending", value: stats?.pendingApplications ?? 0, color: "#f59e0b" },
-        { label: "Reviewed", value: stats?.reviewedApplications ?? 0, color: "#2563eb" },
+        { label: "Under Review", value: stats?.underReviewApplications ?? 0, color: "#2563eb" },
+        { label: "Interview", value: stats?.interviewApplications ?? 0, color: "#7c3aed" },
         { label: "Approved", value: stats?.approvedApplications ?? 0, color: "#16a34a" },
         { label: "Rejected", value: stats?.rejectedApplications ?? 0, color: "#dc2626" }
     ];
-
-    const activities = applications.map((app) => ({
-        id: app.id,
-        title: app.user?.fullName || "Applicant",
-        subtitle: app.positionApplied || app.job?.title || "New application",
-        status: app.status,
-        statusClass: (app.status || "PENDING").toLowerCase(),
-        color: "#16a34a"
-    }));
 
     return (
         <HrLayout title="HR Dashboard">
@@ -52,7 +84,7 @@ function Dashboard() {
                         <div className="page-kicker">Recruitment Overview</div>
                         <h1 className="page-title">Hiring command center</h1>
                         <p className="page-copy">
-                            Monitor applications, review candidates, and manage open vacancies.
+                            Follow the recruitment process: review applications, decide outcomes, schedule interviews, and keep applicants informed.
                         </p>
                     </div>
                     <Link className="primary-button" to="/hr/applications">
@@ -74,8 +106,58 @@ function Dashboard() {
                         <div className="stat-value">{stats?.pendingApplications ?? 0}</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-label">Approved</div>
-                        <div className="stat-value">{stats?.approvedApplications ?? 0}</div>
+                        <div className="stat-label">Interviews scheduled</div>
+                        <div className="stat-value">{stats?.interviewApplications ?? 0}</div>
+                    </div>
+                </div>
+
+                <div className="panel recruitment-workflow-panel">
+                    <div className="workflow-header">
+                        <div>
+                            <h2 className="panel-title">HR recruitment process</h2>
+                            <p className="page-copy">Each action updates the applicant status and sends an in-app notification.</p>
+                        </div>
+                        <div className="workflow-outcome">
+                            <span className="workflow-outcome-label">Applicant outcome</span>
+                            <strong>Applicant tracks status</strong>
+                        </div>
+                    </div>
+
+                    <div className="workflow-steps">
+                        {workflowSteps.map((item) => {
+                            const Icon = item.icon;
+                            const isAnchor = typeof item.link === "string" && item.link.startsWith("#");
+                            return (
+                                isAnchor ? (
+                                    <button
+                                        key={item.step}
+                                        type="button"
+                                        className="workflow-step-card workflow-step-button"
+                                        onClick={() => latestRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                    >
+                                        <div className="workflow-step-number">{item.step}</div>
+                                        <div className="workflow-step-body">
+                                            <div className="workflow-step-title">
+                                                <Icon /> {item.title}
+                                            </div>
+                                            <p className="muted">{item.description}</p>
+                                        </div>
+                                        <FiArrowRight className="workflow-step-arrow" />
+                                    </button>
+                                ) : (
+                                    <Link className="workflow-step-card" to={item.link} key={item.step}>
+                                        <div className="workflow-step-number">{item.step}</div>
+                                        <div className="workflow-step-body">
+                                            <div className="workflow-step-title">
+                                                <Icon /> {item.title}
+                                            </div>
+                                            <p className="muted">{item.description}</p>
+                                        </div>
+                                        <FiArrowRight className="workflow-step-arrow" />
+                                    </Link>
+                                )
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -85,19 +167,86 @@ function Dashboard() {
                         <StatBarChart items={chartItems} />
                     </div>
 
-                    <div className="panel">
-                        <h2 className="panel-title">Recent applications</h2>
-                        <ActivityFeed items={activities} />
+                    <div className="panel workflow-notes-panel">
+                        <h2 className="panel-title">Decision guidelines</h2>
+                        <div className="workflow-notes">
+                            <div className="workflow-note">
+                                <FiCheckCircle />
+                                <div>
+                                    <strong>Approve</strong>
+                                    <p className="muted">Candidate moves forward. Applicant receives approval notification.</p>
+                                </div>
+                            </div>
+                            <div className="workflow-note">
+                                <FiXCircle />
+                                <div>
+                                    <strong>Reject with reason</strong>
+                                    <p className="muted">A rejection reason is required and sent to the applicant immediately.</p>
+                                </div>
+                            </div>
+                            <div className="workflow-note">
+                                <FiCalendar />
+                                <div>
+                                    <strong>Schedule interview</strong>
+                                    <p className="muted">Set date, time, and location. Applicant is notified to be interview-ready.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <div className="panel" id="latest-applications" ref={latestRef}>
+                    <div className="vacancy-list-header">
+                        <h2 className="panel-title"><FiUsers /> Latest 10 applications</h2>
+                        <Link className="secondary-button" to="/hr/applications">View all applicants</Link>
+                    </div>
+
+                    {applications.length === 0 ? (
+                        <p className="muted">No applications submitted yet.</p>
+                    ) : (
+                        <div className="latest-applications-table-wrap">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Applicant</th>
+                                        <th>Position</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {applications.map((application) => (
+                                        <tr key={application.id}>
+                                            <td>
+                                                <div className="step-title">{application.user?.fullName || application.user?.email}</div>
+                                                <div className="muted">{application.user?.email || "-"}</div>
+                                            </td>
+                                            <td>{application.positionApplied || application.job?.title || "-"}</td>
+                                            <td>
+                                                <span className={`badge ${statusClass(application.status)}`}>
+                                                    {statusLabel(application.status)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Link className="secondary-button small" to="/hr/applications">
+                                                    <FiEye /> Review
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 <div className="panel quick-links-panel">
                     <h2 className="panel-title">Quick access</h2>
                     <div className="quick-links">
                         <Link className="quick-link-card" to="/hr/applications">Review applications</Link>
+                        <Link className="quick-link-card" to="/hr/interviews">Scheduled interviews</Link>
                         <Link className="quick-link-card" to="/hr/jobs">Manage vacancies</Link>
                         <Link className="quick-link-card" to="/hr/candidates">Approved candidates</Link>
-                        <Link className="quick-link-card" to="/hr/reports">View reports</Link>
                     </div>
                 </div>
             </div>

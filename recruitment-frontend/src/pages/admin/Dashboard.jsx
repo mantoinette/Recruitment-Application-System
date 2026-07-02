@@ -95,7 +95,7 @@ function Dashboard() {
                     <div className="quick-links">
                         <Link className="quick-link-card" to="/admin/users">Manage users</Link>
                         <Link className="quick-link-card" to="/">View public vacancies</Link>
-                        <Link className="quick-link-card" to="/hr/reports">Recruitment reports</Link>
+                        <Link className="quick-link-card" to="/admin/reports">View reports</Link>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,7 @@
 package com.anto.recruitment_system.service;
 
+import com.anto.recruitment_system.dto.InterviewRequest;
+import com.anto.recruitment_system.dto.ResetPasswordRequest;
 import com.anto.recruitment_system.dto.UserRequest;
 import com.anto.recruitment_system.entity.Role;
 import com.anto.recruitment_system.entity.User;
@@ -34,6 +36,7 @@ public class UserService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole() == null ? Role.APPLICANT : request.getRole());
+        user.setActive(true);
 
         return userRepository.save(user);
     }
@@ -52,6 +55,22 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
+        return userRepository.save(user);
+    }
+
+    public User setUserActive(Long id, boolean active) {
+        User user = getUserById(id);
+        user.setActive(active);
+        return userRepository.save(user);
+    }
+
+    public User resetPassword(Long id, ResetPasswordRequest request) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("New password is required");
+        }
+
+        User user = getUserById(id);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         return userRepository.save(user);
     }
 

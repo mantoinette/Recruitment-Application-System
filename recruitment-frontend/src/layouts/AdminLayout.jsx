@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiBarChart2, FiLogOut, FiUsers } from "react-icons/fi";
+import { FiBarChart2, FiBriefcase, FiCalendar, FiLogOut, FiSettings, FiUserCheck, FiUsers } from "react-icons/fi";
 import { getUser, logout } from "../utils/auth";
 import "../assets/applicant.css";
 import "../assets/hr-dashboard.css";
@@ -20,7 +20,7 @@ function AdminLayout({ children, title = "Admin Panel" }) {
         <div className="app-shell">
             <aside className="app-sidebar">
                 <div className="brand-block">
-                    <h2 className="brand-title">Recruitment</h2>
+                    <h2 className="brand-title">RecruitPro</h2>
                     <div className="brand-subtitle">Admin Panel</div>
                 </div>
 
@@ -30,6 +30,18 @@ function AdminLayout({ children, title = "Admin Panel" }) {
                     </NavLink>
                     <NavLink to="/admin/users">
                         <FiUsers /> Users
+                    </NavLink>
+                    <NavLink to="/admin/jobs">
+                        <FiBriefcase /> Vacancies
+                    </NavLink>
+                    <NavLink to="/admin/departments">
+                        <FiSettings /> Departments
+                    </NavLink>
+                    <NavLink to="/admin/settings">
+                        <FiSettings /> Settings
+                    </NavLink>
+                    <NavLink to="/admin/reports">
+                        <FiBarChart2 /> Reports
                     </NavLink>
                 </nav>
 

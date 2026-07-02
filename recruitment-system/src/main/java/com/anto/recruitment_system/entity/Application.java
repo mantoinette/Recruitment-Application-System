@@ -32,6 +32,10 @@ public class Application {
 
     private String rejectionReason;
 
+    private LocalDateTime interviewScheduledAt;
+    private String interviewLocation;
+    private String interviewNotes;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

@@ -11,6 +11,8 @@ public class NidProfileResponse {
     private String fullName;
     private String dateOfBirth;
     private String gender;
+    private String district;
+    private String sector;
     private String address;
     private String message;
 }

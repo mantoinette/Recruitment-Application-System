@@ -58,7 +58,7 @@ function Candidates() {
                                 )}
                                 {candidates.map((candidate) => (
                                     <tr key={candidate.id}>
-                                        <td>{candidate.user?.fullName || "Unknown"}</td>
+                                        <td>{candidate.user?.fullName || candidate.user?.email || "-"}</td>
                                         <td>{candidate.user?.email || "-"}</td>
                                         <td>{candidate.positionApplied || "-"}</td>
                                         <td>{candidate.nesaGrade || "-"}</td>
