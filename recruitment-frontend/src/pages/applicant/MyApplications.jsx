@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import PageLoading from "../../components/PageLoading";
 import { getUser } from "../../utils/auth";
 import { statusClass, statusLabel } from "../../utils/statusHelpers";
 
@@ -45,7 +46,7 @@ function MyApplications() {
                 </div>
 
                 <div className="panel">
-                    {loading && <p className="muted">Loading applications...</p>}
+                    {loading && <PageLoading message="Loading applications..." />}
                     {!loading && applications.length === 0 && (
                         <div>
                             <p className="muted">You have not submitted any applications yet.</p>

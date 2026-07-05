@@ -1,17 +1,8 @@
-/**
- * Axios configuration file
- *
- * Every request will automatically use
- * http://localhost:8080 as the backend URL
- */
-
 import axios from "axios";
+import { API_BASE_URL } from "./config";
 
 const api = axios.create({
-
-    // Spring Boot URL
-    baseURL: "http://localhost:8080"
-
+    baseURL: API_BASE_URL
 });
 
 export default api;

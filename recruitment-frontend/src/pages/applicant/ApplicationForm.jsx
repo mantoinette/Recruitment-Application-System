@@ -4,14 +4,34 @@ import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
 import { getUser } from "../../utils/auth";
+import { getApiErrorMessage } from "../../utils/apiError";
+import PageLoading from "../../components/PageLoading";
+import { useProfileStatus } from "../../hooks/useProfileStatus";
+
+function formatDeadline(deadline) {
+    if (!deadline) {
+        return "Open";
+    }
+
+    const date = new Date(deadline);
+    if (Number.isNaN(date.getTime())) {
+        return deadline;
+    }
+
+    return date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+}
 
 function ApplicationForm() {
     const { jobId } = useParams();
     const navigate = useNavigate();
     const user = getUser() || {};
+    const { profileComplete, loading: profileLoading } = useProfileStatus();
 
     const [job, setJob] = useState(null);
-    const [profileComplete, setProfileComplete] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
@@ -25,13 +45,8 @@ function ApplicationForm() {
             }
 
             try {
-                const [jobResponse, profileStatus] = await Promise.all([
-                    api.get(`/jobs/${jobId}`),
-                    api.get(`/profile/${user.id}/status`)
-                ]);
-
+                const jobResponse = await api.get(`/jobs/${jobId}`);
                 setJob(jobResponse.data);
-                setProfileComplete(Boolean(profileStatus.data.profileComplete));
             } catch (error) {
                 console.error("Failed to load application data", error);
                 setMessageType("error");
@@ -59,7 +74,7 @@ function ApplicationForm() {
             setTimeout(() => navigate("/applicant/status"), 1500);
         } catch (error) {
             setMessageType("error");
-            setMessage(error.response?.data || "Application submission failed.");
+            setMessage(getApiErrorMessage(error, "Application submission failed."));
         } finally {
             setSubmitting(false);
         }
@@ -78,70 +93,88 @@ function ApplicationForm() {
                     </div>
                 </div>
 
-                {loading && <p className="muted">Loading...</p>}
+                {loading || profileLoading ? (
+                    <PageLoading message="Loading application details..." />
+                ) : job && (
+                    <>
+                        <div className="grid two-column">
+                            <div className="panel">
+                                <h2 className="panel-title">{job.title}</h2>
+                                <div className="profile-row">
+                                    <div className="profile-label">Department</div>
+                                    <div className="profile-value">{job.department}</div>
+                                </div>
+                                <div className="profile-row">
+                                    <div className="profile-label">Location</div>
+                                    <div className="profile-value">{job.location}</div>
+                                </div>
+                                <div className="profile-row">
+                                    <div className="profile-label">Employment type</div>
+                                    <div className="profile-value">{job.employmentType}</div>
+                                </div>
+                                <div className="profile-row">
+                                    <div className="profile-label">Deadline</div>
+                                    <div className="profile-value">{formatDeadline(job.deadline)}</div>
+                                </div>
+                                {job.shortDescription && (
+                                    <p className="page-copy">{job.shortDescription}</p>
+                                )}
+                            </div>
 
-                {!loading && job && (
-                    <div className="grid two-column">
-                        <div className="panel">
-                            <h2 className="panel-title">{job.title}</h2>
-                            <div className="profile-row">
-                                <div className="profile-label">Department</div>
-                                <div className="profile-value">{job.department}</div>
-                            </div>
-                            <div className="profile-row">
-                                <div className="profile-label">Location</div>
-                                <div className="profile-value">{job.location}</div>
-                            </div>
-                            <div className="profile-row">
-                                <div className="profile-label">Employment type</div>
-                                <div className="profile-value">{job.employmentType}</div>
-                            </div>
-                            <div className="profile-row">
-                                <div className="profile-label">Deadline</div>
-                                <div className="profile-value">{job.deadline}</div>
-                            </div>
-                            <p className="page-copy">{job.shortDescription}</p>
-                        </div>
+                            <div className="panel">
+                                <h2 className="panel-title">Application checklist</h2>
 
-                        <div className="panel">
-                            <h2 className="panel-title">Application checklist</h2>
-
-                            <div className={`checklist-item ${profileComplete ? "done" : "pending"}`}>
-                                {profileComplete ? <FiCheckCircle /> : <FiAlertCircle />}
-                                <div>
-                                    <div className="step-title">Profile completion</div>
-                                    <div className="muted">
-                                        {profileComplete
-                                            ? "Your profile is complete and ready."
-                                            : "Complete your profile before applying."}
+                                <div className={`checklist-item ${profileComplete ? "done" : "pending"}`}>
+                                    {profileComplete ? <FiCheckCircle /> : <FiAlertCircle />}
+                                    <div>
+                                        <div className="step-title">Profile completion</div>
+                                        <div className="muted">
+                                            {profileComplete
+                                                ? "Profile complete — you are ready to submit."
+                                                : "Complete your profile before applying."}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {!profileComplete && (
-                                <Link className="secondary-button" to="/applicant/profile">
-                                    Complete profile
-                                </Link>
-                            )}
+                                {!profileComplete && (
+                                    <Link className="secondary-button" to="/applicant/profile">
+                                        Complete profile
+                                    </Link>
+                                )}
 
-                            {message && (
-                                <div className={`message ${messageType === "error" ? "error" : ""}`}>
-                                    {message}
+                                {message && (
+                                    <div className={`message ${messageType === "error" ? "error" : ""}`}>
+                                        {message}
+                                    </div>
+                                )}
+
+                                <div className="form-actions">
+                                    <button
+                                        className="primary-button"
+                                        type="button"
+                                        onClick={submitApplication}
+                                        disabled={!profileComplete || submitting}
+                                    >
+                                        {submitting ? "Submitting..." : "Submit application"}
+                                    </button>
                                 </div>
-                            )}
-
-                            <div className="form-actions">
-                                <button
-                                    className="primary-button"
-                                    type="button"
-                                    onClick={submitApplication}
-                                    disabled={!profileComplete || submitting}
-                                >
-                                    {submitting ? "Submitting..." : "Submit application"}
-                                </button>
                             </div>
                         </div>
-                    </div>
+
+                        <div className="panel apply-job-requirements">
+                            <h2 className="panel-title">Job requirements</h2>
+                            <p className="page-copy apply-job-requirements-intro">
+                                Review the role requirements below before submitting your application.
+                            </p>
+                            <div className="apply-job-requirements-body">
+                                {job.fullDescription ? (
+                                    <p>{job.fullDescription}</p>
+                                ) : (
+                                    <p className="muted">No detailed requirements have been posted for this role yet.</p>
+                                )}
+                            </div>
+                        </div>
+                    </>
                 )}
             </section>
         </ApplicantLayout>

@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api/config";
+
 export function statusLabel(status) {
     const value = typeof status === "string" ? status : status?.name;
 
@@ -27,5 +29,5 @@ export function fileDownloadUrl(path) {
         return null;
     }
 
-    return `http://localhost:8080/files/download?path=${encodeURIComponent(path)}`;
+    return `${API_BASE_URL}/files/download?path=${encodeURIComponent(path)}`;
 }

@@ -5,35 +5,39 @@ import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
 import StatBarChart from "../../components/StatBarChart";
 import ActivityFeed from "../../components/ActivityFeed";
+import PageLoading from "../../components/PageLoading";
+import ProfileStatusBanner from "../../components/ProfileStatusBanner";
+import { useProfileStatus } from "../../hooks/useProfileStatus";
 import { getUser } from "../../utils/auth";
 import { statusClass, statusLabel } from "../../utils/statusHelpers";
 
 function Dashboard() {
     const user = getUser() || {};
+    const { profileComplete, loading: profileLoading, userId } = useProfileStatus();
     const [applications, setApplications] = useState([]);
-    const [profileComplete, setProfileComplete] = useState(false);
+    const [loadingApps, setLoadingApps] = useState(true);
 
     useEffect(() => {
-        const loadData = async () => {
-            if (!user.id) {
+        const loadApplications = async () => {
+            if (!userId) {
+                setLoadingApps(false);
                 return;
             }
 
             try {
-                const [appsResponse, profileStatus] = await Promise.all([
-                    api.get(`/applications/user/${user.id}`),
-                    api.get(`/profile/${user.id}/status`)
-                ]);
-
+                const appsResponse = await api.get(`/applications/user/${userId}`);
                 setApplications(Array.isArray(appsResponse.data) ? appsResponse.data : []);
-                setProfileComplete(Boolean(profileStatus.data.profileComplete));
             } catch (error) {
                 console.error("Failed to load dashboard", error);
+            } finally {
+                setLoadingApps(false);
             }
         };
 
-        loadData();
-    }, [user.id]);
+        loadApplications();
+    }, [userId]);
+
+    const loading = profileLoading || loadingApps;
 
     const total = applications.length;
     const pending = applications.filter((a) => a.status === "PENDING").length;
@@ -69,7 +73,9 @@ function Dashboard() {
                         <div className="page-kicker">Overview</div>
                         <h1 className="page-title">Welcome back, {user.fullName || "Applicant"}</h1>
                         <p className="page-copy">
-                            Complete your profile, browse vacancies, and track your applications.
+                            {profileComplete
+                                ? "Your profile is complete. Browse vacancies and track your applications."
+                                : "Complete your profile, browse vacancies, and track your applications."}
                         </p>
                     </div>
                     <Link className="primary-button" to="/applicant/jobs">
@@ -77,62 +83,64 @@ function Dashboard() {
                     </Link>
                 </div>
 
-                {!profileComplete && (
-                    <div className="alert-banner">
-                        <FiClock />
-                        <div>
-                            <strong>Complete your profile before applying.</strong>
-                            <div className="muted">Personal info, education, skills, and documents are required.</div>
+                {loading ? (
+                    <PageLoading message="Loading dashboard..." />
+                ) : (
+                    <>
+                        <ProfileStatusBanner
+                            loading={profileLoading}
+                            profileComplete={profileComplete}
+                        />
+
+                        <div className="grid stats-grid">
+                            <div className={`stat-card highlight ${profileComplete ? "complete" : ""}`}>
+                                <div className="stat-label">Profile status</div>
+                                <div className="stat-value small">
+                                    {profileComplete ? "Complete" : "Incomplete"}
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-label">Applications</div>
+                                <div className="stat-value">{total}</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-label">Pending</div>
+                                <div className="stat-value">{pending}</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-label">Approved</div>
+                                <div className="stat-value">{approved}</div>
+                            </div>
                         </div>
-                        <Link className="secondary-button" to="/applicant/profile">Complete profile</Link>
-                    </div>
+
+                        <div className="grid two-column">
+                            <div className="panel">
+                                <h2 className="panel-title">Application breakdown</h2>
+                                <StatBarChart items={chartItems} />
+                            </div>
+
+                            <div className="panel">
+                                <h2 className="panel-title">Recent activity</h2>
+                                <ActivityFeed items={activities} />
+                            </div>
+                        </div>
+
+                        <div className="panel quick-links-panel">
+                            <h2 className="panel-title">Quick actions</h2>
+                            <div className="quick-links">
+                                <Link className="quick-link-card" to="/applicant/profile">
+                                    <FiCheckCircle /> Update profile
+                                </Link>
+                                <Link className="quick-link-card" to="/applicant/applications">
+                                    <FiClock /> My applications
+                                </Link>
+                                <Link className="quick-link-card" to="/applicant/jobs">
+                                    <FiBriefcase /> Browse vacancies
+                                </Link>
+                            </div>
+                        </div>
+                    </>
                 )}
-
-                <div className="grid stats-grid">
-                    <div className="stat-card highlight">
-                        <div className="stat-label">Profile status</div>
-                        <div className="stat-value small">{profileComplete ? "Complete" : "Incomplete"}</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">Applications</div>
-                        <div className="stat-value">{total}</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">Pending</div>
-                        <div className="stat-value">{pending}</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">Approved</div>
-                        <div className="stat-value">{approved}</div>
-                    </div>
-                </div>
-
-                <div className="grid two-column">
-                    <div className="panel">
-                        <h2 className="panel-title">Application breakdown</h2>
-                        <StatBarChart items={chartItems} />
-                    </div>
-
-                    <div className="panel">
-                        <h2 className="panel-title">Recent activity</h2>
-                        <ActivityFeed items={activities} />
-                    </div>
-                </div>
-
-                <div className="panel quick-links-panel">
-                    <h2 className="panel-title">Quick actions</h2>
-                    <div className="quick-links">
-                        <Link className="quick-link-card" to="/applicant/profile">
-                            <FiCheckCircle /> Update profile
-                        </Link>
-                        <Link className="quick-link-card" to="/applicant/applications">
-                            <FiClock /> My applications
-                        </Link>
-                        <Link className="quick-link-card" to="/applicant/jobs">
-                            <FiBriefcase /> Browse vacancies
-                        </Link>
-                    </div>
-                </div>
             </section>
         </ApplicantLayout>
     );

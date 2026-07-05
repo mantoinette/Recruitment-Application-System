@@ -28,7 +28,7 @@ function PublicFooter() {
 
             <div className="footer-bottom">
                 <span>© {new Date().getFullYear()} RecruitPro. All rights reserved.</span>
-                <span>Built for applicants, HR teams, and system administrators.</span>
+                <span>Developed by Antoinette.</span>
             </div>
         </footer>
     );

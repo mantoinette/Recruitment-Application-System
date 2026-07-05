@@ -12,8 +12,8 @@ import java.util.Map;
 public class NesaSimulationService {
 
     private static final Map<String, NesaRecordResponse> MOCK_RESULTS = Map.of(
-            "1199880012345678", new NesaRecordResponse(
-                    "1199880012345678",
+            "1199888012345678", new NesaRecordResponse(
+                    "1199888012345678",
                     "Mushimiyimana Antoinette",
                     "A",
                     "Mathematics, Physics, Computer Science",
@@ -21,8 +21,8 @@ public class NesaSimulationService {
                     "2018",
                     "Academic record retrieved from NESA"
             ),
-            "1199770023456789", new NesaRecordResponse(
-                    "1199770023456789",
+            "1199777012345678", new NesaRecordResponse(
+                    "1199777012345678",
                     "Gira Rei",
                     "B+",
                     "Biology, Chemistry, Mathematics",
@@ -30,8 +30,8 @@ public class NesaSimulationService {
                     "2017",
                     "Academic record retrieved from NESA"
             ),
-            "1199660034567890", new NesaRecordResponse(
-                    "1199660034567890",
+            "1199668034567890", new NesaRecordResponse(
+                    "1199668034567890",
                     "Ikamba Gaia",
                     "A-",
                     "Economics, Geography, History",

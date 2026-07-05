@@ -1,17 +1,171 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FiBriefcase, FiCheckCircle, FiHome } from "react-icons/fi";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FiBriefcase, FiCheckCircle, FiHome, FiPlus, FiTrash2 } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
 import { getUser } from "../../utils/auth";
+import { getApiErrorMessage } from "../../utils/apiError";
+import PageLoading from "../../components/PageLoading";
 
 const STEPS = [
-    "Nationality",
+    "Country",
     "Identity",
-    "Academic Record",
+    "Academic Background",
     "Professional Info",
     "Documents"
 ];
+
+const COUNTRIES = [
+    "Rwanda",
+    "Burundi",
+    "Kenya",
+    "Uganda",
+    "Tanzania",
+    "Democratic Republic of the Congo",
+    "South Sudan",
+    "Ethiopia",
+    "South Africa",
+    "Nigeria",
+    "Ghana",
+    "United States",
+    "United Kingdom",
+    "France",
+    "Germany",
+    "Canada",
+    "India",
+    "China",
+    "Other"
+];
+
+function normalizeNationality(value) {
+    if (!value || value === "RWANDAN") {
+        return "Rwanda";
+    }
+    if (value === "NON_RWANDAN") {
+        return "";
+    }
+    return value;
+}
+
+function isRwandaCountry(country) {
+    return country === "Rwanda";
+}
+
+const EDUCATION_LEVELS = [
+    { value: "PRIMARY", label: "Primary" },
+    { value: "HIGH_SCHOOL", label: "High School" },
+    { value: "UNIVERSITY", label: "University" },
+    { value: "MASTERS", label: "Masters" },
+    { value: "PHD_DOCTORAL", label: "PhD / Doctoral" }
+];
+
+function isNesaLevel(level) {
+    return level === "PRIMARY" || level === "HIGH_SCHOOL";
+}
+
+function educationLevelLabel(level) {
+    return EDUCATION_LEVELS.find((item) => item.value === level)?.label || "Education";
+}
+
+function createBackground(level = "HIGH_SCHOOL") {
+    return {
+        localId: `${Date.now()}-${Math.random()}`,
+        id: null,
+        level,
+        schoolName: "",
+        graduationYear: "",
+        grade: "",
+        option: "",
+        nesaVerified: false
+    };
+}
+
+function mapBackgroundFromApi(background) {
+    return {
+        localId: background.id ? `db-${background.id}` : `${Date.now()}-${Math.random()}`,
+        id: background.id || null,
+        level: background.level || "",
+        schoolName: background.schoolName || "",
+        graduationYear: background.graduationYear || "",
+        grade: background.grade || "",
+        option: background.option || "",
+        nesaVerified: Boolean(background.nesaVerified)
+    };
+}
+
+function migrateLegacyBackgrounds(data) {
+    if (Array.isArray(data.academicBackgrounds) && data.academicBackgrounds.length > 0) {
+        return data.academicBackgrounds.map(mapBackgroundFromApi);
+    }
+
+    if (data.school) {
+        return [mapBackgroundFromApi({
+            level: "HIGH_SCHOOL",
+            schoolName: data.school,
+            graduationYear: data.graduationYear,
+            grade: data.nesaGrade,
+            option: data.nesaOption,
+            nesaVerified: data.nesaVerified
+        })];
+    }
+
+    return [];
+}
+
+function isBackgroundComplete(background, rwandan) {
+    if (!background.level) {
+        return false;
+    }
+
+    if (isNesaLevel(background.level)) {
+        const nesaOk = !rwandan || background.nesaVerified;
+        return nesaOk
+            && background.schoolName
+            && background.graduationYear
+            && background.grade
+            && background.option;
+    }
+
+    return Boolean(background.schoolName && background.graduationYear);
+}
+
+function buildProfilePayload(profile) {
+    return {
+        nationality: profile.nationality,
+        fullName: profile.fullName,
+        email: profile.email,
+        nationalId: profile.nationalId,
+        phone: profile.phone,
+        address: profile.address,
+        district: profile.district,
+        sector: profile.sector,
+        dateOfBirth: profile.dateOfBirth,
+        gender: profile.gender,
+        highestEducationLevel: profile.highestEducationLevel || null,
+        academicBackgrounds: profile.academicBackgrounds
+            .filter((background) => background.level)
+            .map(({ localId, ...background }) => ({
+                id: background.id || null,
+                level: background.level,
+                schoolName: background.schoolName || "",
+                graduationYear: background.graduationYear || "",
+                grade: background.grade || "",
+                option: background.option || "",
+                nesaVerified: Boolean(background.nesaVerified)
+            })),
+        school: profile.school,
+        graduationYear: profile.graduationYear,
+        education: profile.education,
+        nesaGrade: profile.nesaGrade,
+        nesaOption: profile.nesaOption,
+        experience: profile.experience,
+        skills: profile.skills,
+        professionalSummary: profile.professionalSummary,
+        certifications: profile.certifications,
+        nidVerified: profile.nidVerified,
+        nesaVerified: profile.nesaVerified
+    };
+}
 
 const DOCUMENT_TYPES = ["cv", "degree", "certificates", "document"];
 
@@ -29,7 +183,7 @@ const emptyUploadStatus = {
     document: "idle"
 };
 const emptyProfile = {
-    nationality: "",
+    nationality: "Rwanda",
     fullName: "",
     email: "",
     nationalId: "",
@@ -39,6 +193,8 @@ const emptyProfile = {
     sector: "",
     dateOfBirth: "",
     gender: "",
+    highestEducationLevel: "",
+    academicBackgrounds: [],
     school: "",
     graduationYear: "",
     education: "",
@@ -54,6 +210,7 @@ const emptyProfile = {
 
 function Profile() {
     const navigate = useNavigate();
+    const location = useLocation();
     const user = getUser() || {};
     const pendingFiles = useRef({});
     const messageRef = useRef(null);
@@ -74,7 +231,7 @@ function Profile() {
     const [saving, setSaving] = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
 
-    const isRwandan = profile.nationality === "RWANDAN";
+    const isRwandan = isRwandaCountry(profile.nationality);
 
     const loadProfile = async () => {
         if (!user.id) {
@@ -86,7 +243,7 @@ function Profile() {
             const response = await api.get(`/profile/${user.id}`);
             const data = response.data;
             setProfile({
-                nationality: data.nationality || "",
+                nationality: normalizeNationality(data.nationality),
                 fullName: data.user?.fullName || user.fullName || "",
                 email: data.user?.email || user.email || "",
                 nationalId: data.nationalId || "",
@@ -96,6 +253,8 @@ function Profile() {
                 sector: data.sector || "",
                 dateOfBirth: data.dateOfBirth || "",
                 gender: data.gender || "",
+                highestEducationLevel: data.highestEducationLevel || "",
+                academicBackgrounds: migrateLegacyBackgrounds(data),
                 school: data.school || "",
                 graduationYear: data.graduationYear || "",
                 education: data.education || "",
@@ -130,40 +289,78 @@ function Profile() {
 
     useEffect(() => {
         loadProfile();
-    }, [user.id]);
+    }, [user.id, location.pathname]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
         setProfile((current) => ({
             ...current,
             [name]: value,
-            ...(name === "nationality" ? { nidVerified: false, nesaVerified: false } : {})
+            ...(name === "nationality"
+                ? {
+                    nidVerified: false,
+                    nesaVerified: false,
+                    nationalId: isRwandaCountry(value) ? current.nationalId : "",
+                    district: isRwandaCountry(value) ? current.district : "",
+                    sector: isRwandaCountry(value) ? current.sector : ""
+                }
+                : {}),
+            ...(name === "nationalId" ? { nidVerified: false } : {})
         }));
     };
 
-    const verifyNid = async () => {
+    const applyNidData = (data) => {
+        setProfile((current) => ({
+            ...current,
+            fullName: data.fullName || current.fullName,
+            dateOfBirth: data.dateOfBirth || current.dateOfBirth,
+            gender: data.gender || current.gender,
+            district: data.district || current.district,
+            sector: data.sector || current.sector,
+            address: data.address || current.address,
+            nidVerified: true
+        }));
+    };
+
+    const verifyNid = async (nationalId = profile.nationalId.trim()) => {
+        if (!nationalId || nationalId.length !== 16) {
+            setMessageType("error");
+            setMessage("Enter a valid 16-digit National ID.");
+            return;
+        }
+
         try {
-            const response = await api.get(`/api/nid/${profile.nationalId.trim()}`);
-            const data = response.data;
-            setProfile((current) => ({
-                ...current,
-                fullName: data.fullName || current.fullName,
-                dateOfBirth: data.dateOfBirth || current.dateOfBirth,
-                gender: data.gender || current.gender,
-                district: data.district || current.district,
-                sector: data.sector || current.sector,
-                address: data.address || current.address,
-                nidVerified: true
-            }));
+            const response = await api.get(`/api/nid/${nationalId}`);
+            applyNidData(response.data);
             setMessageType("success");
-            setMessage(`NID verified for ${data.fullName}.`);
+            setMessage(
+                `NID verified. Birth year ${response.data.dateOfBirth?.slice(0, 4)}, `
+                + `${response.data.gender}, ${response.data.district}, ${response.data.sector}.`
+            );
         } catch (error) {
             setMessageType("error");
-            setMessage(error.response?.data || "NID verification failed.");
+            setMessage(getApiErrorMessage(error, "NID verification failed."));
         }
     };
 
-    const verifyNesa = async () => {
+    useEffect(() => {
+        if (!isRwandan || profile.nidVerified) {
+            return undefined;
+        }
+
+        const nationalId = profile.nationalId.trim();
+        if (nationalId.length !== 16 || !/^\d{16}$/.test(nationalId)) {
+            return undefined;
+        }
+
+        const timer = window.setTimeout(() => {
+            verifyNid(nationalId);
+        }, 500);
+
+        return () => window.clearTimeout(timer);
+    }, [profile.nationalId, isRwandan, profile.nidVerified]);
+
+    const verifyNesa = async (backgroundLocalId) => {
         if (!profile.nationalId.trim()) {
             setMessageType("error");
             setMessage("Enter and verify your National ID before NESA lookup.");
@@ -173,23 +370,86 @@ function Profile() {
         try {
             const response = await api.get(`/api/nesa/${profile.nationalId.trim()}`);
             const data = response.data;
-            setProfile((current) => ({
-                ...current,
-                school: data.school || "",
-                nesaGrade: data.grade || "",
-                nesaOption: data.option || "",
-                graduationYear: data.year || "",
-                education: data.school
-                    ? `${data.school} (${data.year || "N/A"})`
-                    : current.education,
-                nesaVerified: true
-            }));
+
+            setProfile((current) => {
+                const academicBackgrounds = current.academicBackgrounds.map((background) => {
+                    if (background.localId !== backgroundLocalId) {
+                        return background;
+                    }
+
+                    return {
+                        ...background,
+                        schoolName: data.school || "",
+                        grade: data.grade || "",
+                        option: data.option || "",
+                        graduationYear: data.year || "",
+                        nesaVerified: true
+                    };
+                });
+
+                const primaryBackground = academicBackgrounds.find((background) =>
+                    background.localId === backgroundLocalId
+                );
+
+                return {
+                    ...current,
+                    academicBackgrounds,
+                    school: primaryBackground?.schoolName || current.school,
+                    nesaGrade: primaryBackground?.grade || current.nesaGrade,
+                    nesaOption: primaryBackground?.option || current.nesaOption,
+                    graduationYear: primaryBackground?.graduationYear || current.graduationYear,
+                    education: primaryBackground?.schoolName
+                        ? `${primaryBackground.schoolName} (${primaryBackground.graduationYear || "N/A"})`
+                        : current.education,
+                    nesaVerified: academicBackgrounds
+                        .filter((background) => isNesaLevel(background.level))
+                        .every((background) => background.nesaVerified)
+                };
+            });
+
             setMessageType("success");
             setMessage(`NESA record loaded: ${data.school}, grade ${data.grade}.`);
         } catch (error) {
             setMessageType("error");
-            setMessage(error.response?.data || "NESA lookup failed.");
+            setMessage(getApiErrorMessage(error, "NESA lookup failed."));
         }
+    };
+
+    const addBackground = (level) => {
+        setProfile((current) => ({
+            ...current,
+            academicBackgrounds: [...current.academicBackgrounds, createBackground(level)]
+        }));
+    };
+
+    const updateBackground = (backgroundLocalId, field, value) => {
+        setProfile((current) => ({
+            ...current,
+            academicBackgrounds: current.academicBackgrounds.map((background) => (
+                background.localId === backgroundLocalId
+                    ? {
+                        ...background,
+                        [field]: value,
+                        ...(field === "level" && isNesaLevel(value)
+                            ? { nesaVerified: false }
+                            : {}),
+                        ...(field === "level" && !isNesaLevel(value)
+                            ? { nesaVerified: false, grade: "", option: "" }
+                            : {})
+                    }
+                    : background
+            )),
+            nesaVerified: false
+        }));
+    };
+
+    const removeBackground = (backgroundLocalId) => {
+        setProfile((current) => ({
+            ...current,
+            academicBackgrounds: current.academicBackgrounds.filter(
+                (background) => background.localId !== backgroundLocalId
+            )
+        }));
     };
 
     useEffect(() => {
@@ -199,7 +459,7 @@ function Profile() {
     }, [message]);
 
     const persistProfile = async () => {
-        const response = await api.put(`/profile/${user.id}`, profile);
+        const response = await api.put(`/profile/${user.id}`, buildProfilePayload(profile));
         const updatedUser = {
             ...user,
             fullName: profile.fullName || user.fullName,
@@ -286,8 +546,7 @@ function Profile() {
             }
         } catch (error) {
             setMessageType("error");
-            const uploadError = error.response?.data;
-            setMessage(typeof uploadError === "string" ? uploadError : "Failed to save profile or upload documents.");
+            setMessage(getApiErrorMessage(error, "Failed to save profile or upload documents."));
         } finally {
             setSaving(false);
         }
@@ -308,7 +567,7 @@ function Profile() {
             setMessage(`${DOCUMENT_LABELS[type]} uploaded successfully.`);
         } catch (error) {
             setMessageType("error");
-            setMessage(error.response?.data || `${DOCUMENT_LABELS[type]} upload failed. Please try again.`);
+            setMessage(getApiErrorMessage(error, `${DOCUMENT_LABELS[type]} upload failed. Please try again.`));
         }
     };
 
@@ -324,19 +583,26 @@ function Profile() {
             setStep(step + 1);
         } catch (error) {
             setMessageType("error");
-            setMessage(error.response?.data || "Failed to save your progress. Please try again.");
+            setMessage(getApiErrorMessage(error, "Failed to save your progress. Please try again."));
         }
     };
 
     const canProceed = () => {
-        if (step === 0) return profile.nationality === "RWANDAN" || profile.nationality === "NON_RWANDAN";
+        if (step === 0) return Boolean(profile.nationality);
         if (step === 1) {
             const base = profile.fullName && profile.gender && profile.dateOfBirth && profile.district && profile.sector;
             return isRwandan ? base && profile.nidVerified : base;
         }
         if (step === 2) {
-            const base = profile.school && profile.nesaGrade && profile.nesaOption && profile.graduationYear;
-            return isRwandan ? base && profile.nesaVerified : base;
+            if (!profile.highestEducationLevel) {
+                return false;
+            }
+            if (!profile.academicBackgrounds.length) {
+                return false;
+            }
+            return profile.academicBackgrounds.every((background) =>
+                isBackgroundComplete(background, isRwandan)
+            );
         }
         if (step === 3) {
             return profile.phone && profile.email && profile.experience && profile.skills && profile.professionalSummary;
@@ -348,30 +614,30 @@ function Profile() {
         if (step === 0) {
             return (
                 <div className="profile-step">
-                    <h2 className="panel-title">What is your nationality?</h2>
-                    <p className="page-copy">Rwandan applicants verify identity through NID and load academic records from NESA.</p>
-                    <div className="radio-group">
-                        <label className={`radio-card ${profile.nationality === "RWANDAN" ? "selected" : ""}`}>
-                            <input
-                                type="radio"
-                                name="nationality"
-                                value="RWANDAN"
-                                checked={profile.nationality === "RWANDAN"}
-                                onChange={handleChange}
-                            />
-                            <span>Rwandan</span>
-                        </label>
-                        <label className={`radio-card ${profile.nationality === "NON_RWANDAN" ? "selected" : ""}`}>
-                            <input
-                                type="radio"
-                                name="nationality"
-                                value="NON_RWANDAN"
-                                checked={profile.nationality === "NON_RWANDAN"}
-                                onChange={handleChange}
-                            />
-                            <span>Non-Rwandan</span>
-                        </label>
+                    <h2 className="panel-title">Country of residence</h2>
+                    <p className="page-copy">
+                        Rwanda is selected by default. Rwandan applicants verify identity with NID and load academic records from NESA.
+                    </p>
+                    <div className="field full">
+                        <label htmlFor="nationality">Country</label>
+                        <select
+                            id="nationality"
+                            name="nationality"
+                            className="auth-select"
+                            value={profile.nationality || "Rwanda"}
+                            onChange={handleChange}
+                        >
+                            {!profile.nationality && <option value="">Select your country</option>}
+                            {COUNTRIES.map((country) => (
+                                <option key={country} value={country}>{country}</option>
+                            ))}
+                        </select>
                     </div>
+                    {!isRwandan && (
+                        <p className="role-hint">
+                            You will enter your identity and academic details manually in the next steps.
+                        </p>
+                    )}
                 </div>
             );
         }
@@ -382,6 +648,10 @@ function Profile() {
                     <h2 className="panel-title">Identity information</h2>
                     {isRwandan ? (
                         <>
+                            <p className="page-copy">
+                                Digits 2-5 of your NID show your birth year. Digit 6 is 7 for women and 8 for men.
+                                District, sector, and date of birth are filled automatically after verification.
+                            </p>
                             <div className="field full">
                                 <label htmlFor="nationalId">National ID (NID)</label>
                                 <div className="inline-actions">
@@ -391,8 +661,10 @@ function Profile() {
                                         value={profile.nationalId}
                                         onChange={handleChange}
                                         placeholder="16-digit National ID"
+                                        maxLength={16}
+                                        inputMode="numeric"
                                     />
-                                    <button className="secondary-button" type="button" onClick={verifyNid}>
+                                    <button className="secondary-button" type="button" onClick={() => verifyNid()}>
                                         Verify identity
                                     </button>
                                 </div>
@@ -418,6 +690,10 @@ function Profile() {
                                 <div className="field">
                                     <label htmlFor="sector">Sector</label>
                                     <input id="sector" name="sector" value={profile.sector} readOnly />
+                                </div>
+                                <div className="field full">
+                                    <label htmlFor="address">Address</label>
+                                    <input id="address" name="address" value={profile.address} readOnly />
                                 </div>
                             </div>
                         </>
@@ -450,59 +726,211 @@ function Profile() {
         }
 
         if (step === 2) {
+            const defaultAddLevel = isNesaLevel(profile.highestEducationLevel)
+                ? profile.highestEducationLevel
+                : "UNIVERSITY";
+
             return (
                 <div className="profile-step">
-                    <h2 className="panel-title">Academic record</h2>
-                    {isRwandan ? (
-                        <>
-                            <div className="field full">
-                                <label>NESA academic record</label>
-                                <div className="inline-actions">
-                                    <button className="secondary-button" type="button" onClick={verifyNesa}>
-                                        Load from NESA API
-                                    </button>
-                                    {profile.nesaVerified && <span className="badge approved">Loaded</span>}
-                                </div>
-                            </div>
-                            <div className="form-grid">
-                                <div className="field">
-                                    <label htmlFor="school">School</label>
-                                    <input id="school" name="school" value={profile.school} readOnly />
-                                </div>
-                                <div className="field">
-                                    <label htmlFor="nesaOption">Combination (Option)</label>
-                                    <input id="nesaOption" name="nesaOption" value={profile.nesaOption} readOnly />
-                                </div>
-                                <div className="field">
-                                    <label htmlFor="nesaGrade">Grade</label>
-                                    <input id="nesaGrade" name="nesaGrade" value={profile.nesaGrade} readOnly />
-                                </div>
-                                <div className="field">
-                                    <label htmlFor="graduationYear">Graduation year</label>
-                                    <input id="graduationYear" name="graduationYear" value={profile.graduationYear} readOnly />
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="form-grid">
-                            <div className="field full">
-                                <label htmlFor="school">School</label>
-                                <input id="school" name="school" value={profile.school} onChange={handleChange} required />
-                            </div>
-                            <div className="field">
-                                <label htmlFor="nesaOption">Combination / Program</label>
-                                <input id="nesaOption" name="nesaOption" value={profile.nesaOption} onChange={handleChange} required />
-                            </div>
-                            <div className="field">
-                                <label htmlFor="nesaGrade">Grade / Result</label>
-                                <input id="nesaGrade" name="nesaGrade" value={profile.nesaGrade} onChange={handleChange} required />
-                            </div>
-                            <div className="field">
-                                <label htmlFor="graduationYear">Graduation year</label>
-                                <input id="graduationYear" name="graduationYear" value={profile.graduationYear} onChange={handleChange} required />
-                            </div>
-                        </div>
+                    <h2 className="panel-title">Academic background</h2>
+                    <p className="page-copy">
+                        Select your highest education level, then add one or more academic backgrounds.
+                        Primary and high school records can be loaded from NESA for Rwandan applicants.
+                        University level and above are entered manually.
+                    </p>
+
+                    <div className="field full">
+                        <label htmlFor="highestEducationLevel">Highest education level</label>
+                        <select
+                            id="highestEducationLevel"
+                            name="highestEducationLevel"
+                            className="auth-select"
+                            value={profile.highestEducationLevel}
+                            onChange={handleChange}
+                        >
+                            <option value="">Select highest level</option>
+                            {EDUCATION_LEVELS.map((level) => (
+                                <option key={level.value} value={level.value}>{level.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="academic-background-actions">
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => addBackground(defaultAddLevel)}
+                            disabled={!profile.highestEducationLevel}
+                        >
+                            <FiPlus /> Add academic background
+                        </button>
+                    </div>
+
+                    {profile.academicBackgrounds.length === 0 && (
+                        <p className="role-hint">Add at least one academic background to continue.</p>
                     )}
+
+                    {profile.academicBackgrounds.map((background, index) => (
+                        <div className="academic-background-card" key={background.localId}>
+                            <div className="academic-background-card-header">
+                                <strong>Background {index + 1}</strong>
+                                <button
+                                    className="secondary-button danger-button"
+                                    type="button"
+                                    onClick={() => removeBackground(background.localId)}
+                                >
+                                    <FiTrash2 /> Remove
+                                </button>
+                            </div>
+
+                            <div className="field full">
+                                <label>Education level</label>
+                                <select
+                                    className="auth-select"
+                                    value={background.level}
+                                    onChange={(event) => updateBackground(
+                                        background.localId,
+                                        "level",
+                                        event.target.value
+                                    )}
+                                >
+                                    <option value="">Select level</option>
+                                    {EDUCATION_LEVELS.map((level) => (
+                                        <option key={level.value} value={level.value}>{level.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {isNesaLevel(background.level) ? (
+                                <>
+                                    {isRwandan && (
+                                        <div className="field full">
+                                            <label>NESA record</label>
+                                            <div className="inline-actions">
+                                                <button
+                                                    className="secondary-button"
+                                                    type="button"
+                                                    onClick={() => verifyNesa(background.localId)}
+                                                >
+                                                    Load from NESA
+                                                </button>
+                                                {background.nesaVerified && (
+                                                    <span className="badge approved">Loaded</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="form-grid">
+                                        <div className="field full">
+                                            <label>School</label>
+                                            <input
+                                                value={background.schoolName}
+                                                onChange={(event) => updateBackground(
+                                                    background.localId,
+                                                    "schoolName",
+                                                    event.target.value
+                                                )}
+                                                readOnly={isRwandan && background.nesaVerified}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="field">
+                                            <label>Combination / option</label>
+                                            <input
+                                                value={background.option}
+                                                onChange={(event) => updateBackground(
+                                                    background.localId,
+                                                    "option",
+                                                    event.target.value
+                                                )}
+                                                readOnly={isRwandan && background.nesaVerified}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="field">
+                                            <label>Grade</label>
+                                            <input
+                                                value={background.grade}
+                                                onChange={(event) => updateBackground(
+                                                    background.localId,
+                                                    "grade",
+                                                    event.target.value
+                                                )}
+                                                readOnly={isRwandan && background.nesaVerified}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="field">
+                                            <label>Year of completion</label>
+                                            <input
+                                                value={background.graduationYear}
+                                                onChange={(event) => updateBackground(
+                                                    background.localId,
+                                                    "graduationYear",
+                                                    event.target.value
+                                                )}
+                                                readOnly={isRwandan && background.nesaVerified}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            ) : background.level ? (
+                                <div className="form-grid">
+                                    <div className="field full">
+                                        <label>Institution / school name</label>
+                                        <input
+                                            value={background.schoolName}
+                                            onChange={(event) => updateBackground(
+                                                background.localId,
+                                                "schoolName",
+                                                event.target.value
+                                            )}
+                                            placeholder="e.g. University of Rwanda"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="field">
+                                        <label>Year of completion</label>
+                                        <input
+                                            value={background.graduationYear}
+                                            onChange={(event) => updateBackground(
+                                                background.localId,
+                                                "graduationYear",
+                                                event.target.value
+                                            )}
+                                            placeholder="e.g. 2022"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="field">
+                                        <label>Program / field (optional)</label>
+                                        <input
+                                            value={background.option}
+                                            onChange={(event) => updateBackground(
+                                                background.localId,
+                                                "option",
+                                                event.target.value
+                                            )}
+                                            placeholder="e.g. Computer Science"
+                                        />
+                                    </div>
+                                    <div className="field">
+                                        <label>Result / classification (optional)</label>
+                                        <input
+                                            value={background.grade}
+                                            onChange={(event) => updateBackground(
+                                                background.localId,
+                                                "grade",
+                                                event.target.value
+                                            )}
+                                            placeholder="e.g. Second Class Upper"
+                                        />
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+                    ))}
                 </div>
             );
         }
@@ -578,13 +1006,17 @@ function Profile() {
                             Follow each step to verify your identity, load academic records, and upload required documents.
                         </p>
                     </div>
-                    <div className={`completion-pill ${profileComplete ? "complete" : ""}`}>
-                        {profileComplete ? "Profile complete" : "Profile incomplete"}
+                    <div className={`completion-pill ${loading ? "loading" : profileComplete ? "complete" : ""}`}>
+                        {loading
+                            ? "Checking profile status..."
+                            : profileComplete
+                                ? "Profile complete"
+                                : "Profile incomplete"}
                     </div>
                 </div>
 
                 {loading ? (
-                    <p className="muted">Loading profile...</p>
+                    <PageLoading message="Loading your profile..." />
                 ) : (
                     <div className="panel profile-wizard">
                         <div className="stepper">

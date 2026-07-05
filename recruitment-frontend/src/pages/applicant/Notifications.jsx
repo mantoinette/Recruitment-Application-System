@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FiAlertCircle, FiBell, FiCheckCircle, FiClock } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import PageLoading from "../../components/PageLoading";
 import { getUser } from "../../utils/auth";
 
 function Notifications() {
@@ -71,7 +72,7 @@ function Notifications() {
                 </div>
 
                 <div className="panel">
-                    {loading && <p className="muted">Loading notifications...</p>}
+                    {loading && <PageLoading message="Loading notifications..." />}
                     {!loading && notifications.length === 0 && (
                         <div className="vacancy-empty">
                             <FiBell />

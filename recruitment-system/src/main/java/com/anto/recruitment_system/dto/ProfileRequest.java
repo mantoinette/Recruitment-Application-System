@@ -1,6 +1,10 @@
 package com.anto.recruitment_system.dto;
 
+import com.anto.recruitment_system.entity.EducationLevel;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class ProfileRequest {
@@ -15,6 +19,8 @@ public class ProfileRequest {
     private String sector;
     private String dateOfBirth;
     private String gender;
+    private EducationLevel highestEducationLevel;
+    private List<AcademicBackgroundRequest> academicBackgrounds = new ArrayList<>();
     private String school;
     private String graduationYear;
     private String education;

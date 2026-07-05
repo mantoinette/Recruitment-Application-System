@@ -7,12 +7,6 @@ import PublicHeader from "../../components/PublicHeader";
 import registerImage from "../../assets/auth-register.png";
 import "../../assets/public.css";
 
-const roleDescriptions = {
-    APPLICANT: "Apply for jobs, complete your profile, and track application status.",
-    HR: "Review applications, manage vacancies, and monitor recruitment activity.",
-    ADMIN: "Manage system users, oversee platform activity, and view analytics."
-};
-
 function Register() {
     const navigate = useNavigate();
     const [message, setMessage] = useState("");
@@ -21,8 +15,7 @@ function Register() {
     const [user, setUser] = useState({
         fullName: "",
         email: "",
-        password: "",
-        role: "APPLICANT"
+        password: ""
     });
 
     const handleChange = (event) => {
@@ -38,7 +31,10 @@ function Register() {
         setLoading(true);
 
         try {
-            await api.post("/auth/register", user);
+            await api.post("/auth/register", {
+                ...user,
+                role: "APPLICANT"
+            });
             navigate("/login");
         } catch (error) {
             console.error("Registration Error:", error);
@@ -64,7 +60,7 @@ function Register() {
                     <div className="auth-card">
                         <h1 className="auth-title">Create your account</h1>
                         <p className="auth-copy">
-                            Select your role and register to access the appropriate dashboard.
+                            Create an applicant account to browse jobs, complete your profile, and apply online.
                         </p>
 
                         <form className="auth-form" onSubmit={registerUser}>
@@ -115,23 +111,6 @@ function Register() {
                                     />
                                 </div>
                             </div>
-
-                            <div className="auth-field">
-                                <label htmlFor="role">Account role</label>
-                                <select
-                                    id="role"
-                                    name="role"
-                                    className="auth-select"
-                                    value={user.role}
-                                    onChange={handleChange}
-                                >
-                                    <option value="APPLICANT">Applicant</option>
-                                    <option value="HR">HR</option>
-                                    <option value="ADMIN">Admin</option>
-                                </select>
-                            </div>
-
-                            <p className="role-hint">{roleDescriptions[user.role]}</p>
 
                             {message && <div className="auth-message">{message}</div>}
 

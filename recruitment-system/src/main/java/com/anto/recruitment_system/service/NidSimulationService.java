@@ -6,41 +6,23 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 /**
- * Simulates the National ID (NID) API used during application submission.
+ * Simulates the National ID (NID) API used during profile completion.
  */
 @Service
 public class NidSimulationService {
 
     private static final Map<String, NidProfileResponse> MOCK_REGISTRY = Map.of(
-            "1199880012345678", new NidProfileResponse(
-                    "1199880012345678",
-                    "Jean Claude Uwimana",
-                    "1998-04-12",
-                    "Male",
-                    "Gasabo",
-                    "Kimironko",
-                    "Kigali, Gasabo, Kimironko",
-                    "Profile retrieved from NID registry"
+            "1199888012345678", namedProfile(
+                    "1199888012345678",
+                    "Jean Claude Uwimana"
             ),
-            "1199770023456789", new NidProfileResponse(
-                    "1199770023456789",
-                    "Marie Claire Mukamana",
-                    "1997-08-21",
-                    "Female",
-                    "Kicukiro",
-                    "Gikondo",
-                    "Kigali, Kicukiro, Gikondo",
-                    "Profile retrieved from NID registry"
+            "1199777012345678", namedProfile(
+                    "1199777012345678",
+                    "Marie Claire Mukamana"
             ),
-            "1199660034567890", new NidProfileResponse(
-                    "1199660034567890",
-                    "Patrick Nshimiyimana",
-                    "1996-11-03",
-                    "Male",
-                    "Musanze",
-                    "Muhoza",
-                    "Musanze, Northern Province, Muhoza",
-                    "Profile retrieved from NID registry"
+            "1199668034567890", namedProfile(
+                    "1199668034567890",
+                    "Patrick Nshimiyimana"
             )
     );
 
@@ -51,24 +33,38 @@ public class NidSimulationService {
 
         String normalizedId = nationalId.trim();
 
-        NidProfileResponse profile = MOCK_REGISTRY.get(normalizedId);
-        if (profile != null) {
-            return profile;
-        }
-
         if (!normalizedId.matches("\\d{16}")) {
             throw new IllegalArgumentException("National ID must be 16 digits");
         }
 
+        NidProfileResponse knownProfile = MOCK_REGISTRY.get(normalizedId);
+        if (knownProfile != null) {
+            return knownProfile;
+        }
+
+        return buildFromDigits(normalizedId, "");
+    }
+
+    private static NidProfileResponse namedProfile(String nationalId, String fullName) {
+        return buildFromDigits(nationalId, fullName);
+    }
+
+    private static NidProfileResponse buildFromDigits(String nationalId, String fullName) {
+        NidParser.ParsedNid parsed = NidParser.parse(nationalId);
+
         return new NidProfileResponse(
-                normalizedId,
-                "Verified Applicant",
-                "1999-01-01",
-                "Not specified",
-                "Kigali",
-                "Nyarugenge",
-                "Kigali, Nyarugenge",
-                "Profile retrieved from NID registry (simulated)"
+                nationalId,
+                fullName == null || fullName.isBlank() ? null : fullName,
+                parsed.dateOfBirth(),
+                parsed.gender(),
+                parsed.district(),
+                parsed.sector(),
+                parsed.address(),
+                "Profile retrieved from NID registry (birth year "
+                        + parsed.birthYear()
+                        + ", gender digit "
+                        + nationalId.charAt(5)
+                        + ")"
         );
     }
 }

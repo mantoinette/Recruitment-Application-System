@@ -3,8 +3,10 @@ package com.anto.recruitment_system.controller;
 import com.anto.recruitment_system.dto.ProfileRequest;
 import com.anto.recruitment_system.entity.ApplicantProfile;
 import com.anto.recruitment_system.service.ApplicantProfileService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -70,5 +72,12 @@ public class ProfileController {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleBadRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(exception.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleUnreadableRequest(HttpMessageNotReadableException exception) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body("Invalid profile data. Check education level and academic background fields.");
     }
 }

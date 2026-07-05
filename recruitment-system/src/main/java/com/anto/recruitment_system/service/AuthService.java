@@ -83,8 +83,8 @@ public class AuthService {
                 )
         );
 
-        // Assign selected role (defaults to applicant)
-        user.setRole(request.getRole() == null ? Role.APPLICANT : request.getRole());
+        // Public registration is applicant-only; HR/Admin roles are assigned by an administrator.
+        user.setRole(Role.APPLICANT);
 
         // Save into database
         return userRepository.save(user);

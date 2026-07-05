@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -29,6 +31,13 @@ public class ApplicantProfile {
     private String sector;
     private String dateOfBirth;
     private String gender;
+
+    @Enumerated(EnumType.STRING)
+    private EducationLevel highestEducationLevel;
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<AcademicBackground> academicBackgrounds = new ArrayList<>();
+
     private String school;
     private String graduationYear;
     private String education;

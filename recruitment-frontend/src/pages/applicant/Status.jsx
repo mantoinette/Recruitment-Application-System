@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
+import PageLoading from "../../components/PageLoading";
 import { getUser } from "../../utils/auth";
 import { statusClass, statusLabel } from "../../utils/statusHelpers";
 
@@ -47,7 +48,7 @@ function Status() {
                 <div className="panel">
                     <h2 className="panel-title">Your submissions</h2>
 
-                    {loading && <p className="muted">Loading applications...</p>}
+                    {loading && <PageLoading message="Loading applications..." />}
                     {!loading && error && <div className="message error">{error}</div>}
                     {!loading && !error && applications.length === 0 && (
                         <p className="muted">No applications found for this account.</p>

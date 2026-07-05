@@ -1,34 +1,33 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight, FiBriefcase, FiCalendar, FiMapPin } from "react-icons/fi";
+import { FiArrowRight, FiCalendar, FiMapPin } from "react-icons/fi";
 import api from "../../api/axios";
 import ApplicantLayout from "../../layouts/ApplicantLayout";
-import { getUser } from "../../utils/auth";
+import PageLoading from "../../components/PageLoading";
+import ProfileStatusBanner from "../../components/ProfileStatusBanner";
+import { useProfileStatus } from "../../hooks/useProfileStatus";
 
 function AvailableJobs() {
-    const user = getUser() || {};
+    const { profileComplete, loading: profileLoading } = useProfileStatus();
     const [jobs, setJobs] = useState([]);
-    const [profileComplete, setProfileComplete] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loadingJobs, setLoadingJobs] = useState(true);
 
     useEffect(() => {
-        const loadData = async () => {
+        const loadJobs = async () => {
             try {
-                const [jobsResponse, statusResponse] = await Promise.all([
-                    api.get("/jobs/open"),
-                    user.id ? api.get(`/profile/${user.id}/status`) : Promise.resolve({ data: {} })
-                ]);
+                const jobsResponse = await api.get("/jobs/open");
                 setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
-                setProfileComplete(Boolean(statusResponse.data?.profileComplete));
             } catch (error) {
                 console.error("Failed to load jobs", error);
             } finally {
-                setLoading(false);
+                setLoadingJobs(false);
             }
         };
 
-        loadData();
-    }, [user.id]);
+        loadJobs();
+    }, []);
+
+    const loading = profileLoading || loadingJobs;
 
     return (
         <ApplicantLayout title="Available Jobs">
@@ -38,24 +37,20 @@ function AvailableJobs() {
                         <div className="page-kicker">Vacancies</div>
                         <h1 className="page-title">Browse open positions</h1>
                         <p className="page-copy">
-                            Explore current openings and apply once your profile is complete.
+                            {profileComplete
+                                ? "Your profile is complete. Choose a vacancy and apply."
+                                : "Explore current openings and apply once your profile is complete."}
                         </p>
                     </div>
                 </div>
 
-                {!profileComplete && (
-                    <div className="alert-banner">
-                        <FiBriefcase />
-                        <div>
-                            <strong>Complete your profile before applying.</strong>
-                            <div className="muted">NID/NESA verification and documents are required for Rwandan applicants.</div>
-                        </div>
-                        <Link className="secondary-button" to="/applicant/profile">Complete profile</Link>
-                    </div>
-                )}
+                <ProfileStatusBanner
+                    loading={profileLoading}
+                    profileComplete={profileComplete}
+                />
 
                 <div className="panel">
-                    {loading && <p className="muted">Loading vacancies...</p>}
+                    {loading && <PageLoading message="Loading vacancies..." />}
                     {!loading && jobs.length === 0 && (
                         <p className="muted">No open vacancies at the moment.</p>
                     )}
