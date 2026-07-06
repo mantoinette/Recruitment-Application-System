@@ -7,59 +7,81 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class DatabaseConfig {
 
-    @Value("${SPRING_DATASOURCE_URL:}")
-    private String springDatasourceUrl;
+    @Value("${spring.datasource.url}")
+    private String datasourceUrl;
 
     @Value("${DATABASE_URL:}")
     private String databaseUrl;
 
-    @Value("${SPRING_DATASOURCE_USERNAME:}")
+    @Value("${spring.datasource.username}")
     private String username;
 
-    @Value("${SPRING_DATASOURCE_PASSWORD:}")
+    @Value("${spring.datasource.password}")
     private String password;
 
     @Bean
     @Primary
     public DataSource dataSource() {
-        String url = !springDatasourceUrl.isBlank() ? springDatasourceUrl : databaseUrl;
-        url = toJdbcUrl(url);
+        String url = datasourceUrl;
+        if (url.isBlank() && !databaseUrl.isBlank()) {
+            url = databaseUrl;
+        }
+        if (url.isBlank()) {
+            url = "jdbc:postgresql://localhost:5434/recruitment_db";
+        }
+
+        ParsedDatabase parsed = parseDatabaseUrl(url);
 
         HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setJdbcUrl(url);
+        dataSource.setJdbcUrl(parsed.jdbcUrl());
         dataSource.setDriverClassName("org.postgresql.Driver");
-
-        if (!username.isBlank()) {
-            dataSource.setUsername(username);
-        }
-        if (!password.isBlank()) {
-            dataSource.setPassword(password);
-        }
+        dataSource.setUsername(username.isBlank() ? parsed.username() : username);
+        dataSource.setPassword(password.isBlank() ? parsed.password() : password);
 
         return dataSource;
     }
 
-    static String toJdbcUrl(String url) {
-        if (url == null || url.isBlank()) {
-            throw new IllegalStateException(
-                    "Set SPRING_DATASOURCE_URL or DATABASE_URL (postgresql://... or jdbc:postgresql://...)");
+    static ParsedDatabase parseDatabaseUrl(String url) {
+        String normalized = url.trim();
+
+        if (normalized.startsWith("jdbc:postgresql://")) {
+            normalized = "postgresql://" + normalized.substring("jdbc:postgresql://".length());
+        } else if (normalized.startsWith("postgres://")) {
+            normalized = "postgresql://" + normalized.substring("postgres://".length());
         }
 
-        if (url.startsWith("jdbc:")) {
-            return ensureRenderSsl(url);
-        }
-        if (url.startsWith("postgres://")) {
-            return ensureRenderSsl("jdbc:postgresql://" + url.substring("postgres://".length()));
-        }
-        if (url.startsWith("postgresql://")) {
-            return ensureRenderSsl("jdbc:postgresql://" + url.substring("postgresql://".length()));
+        URI uri = URI.create(normalized);
+        String host = uri.getHost();
+        int port = uri.getPort() > 0 ? uri.getPort() : 5432;
+        String database = uri.getPath() == null ? "" : uri.getPath().replaceFirst("^/", "");
+
+        String parsedUsername = "";
+        String parsedPassword = "";
+        if (uri.getUserInfo() != null && !uri.getUserInfo().isBlank()) {
+            String[] credentials = uri.getUserInfo().split(":", 2);
+            parsedUsername = decode(credentials[0]);
+            parsedPassword = credentials.length > 1 ? decode(credentials[1]) : "";
         }
 
-        return url;
+        String query = uri.getQuery();
+        String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database;
+        if (query != null && !query.isBlank()) {
+            jdbcUrl += "?" + query;
+        }
+        jdbcUrl = ensureRenderSsl(jdbcUrl);
+
+        return new ParsedDatabase(jdbcUrl, parsedUsername, parsedPassword);
+    }
+
+    private static String decode(String value) {
+        return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
     private static String ensureRenderSsl(String jdbcUrl) {
@@ -68,5 +90,8 @@ public class DatabaseConfig {
             return jdbcUrl + separator + "sslmode=require";
         }
         return jdbcUrl;
+    }
+
+    record ParsedDatabase(String jdbcUrl, String username, String password) {
     }
 }
