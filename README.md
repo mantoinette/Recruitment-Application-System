@@ -11,6 +11,7 @@ A full-stack recruitment platform for organizations in Rwanda and beyond. **Recr
 | **Frontend** | React 19, Vite, React Router, Axios, Recharts |
 | **Backend** | Spring Boot 3.2, Spring Security, Spring Data JPA |
 | **Database** | PostgreSQL |
+| **Deployment** | Docker, Render |
 | **Auth** | Email/password with role-based access (Applicant, HR, Admin) |
 
 ```mermaid
@@ -92,25 +93,27 @@ Applications move through these statuses:
 ## Project structure
 
 ```
-recruitment-system/
+recruitment-system (1)/
+├── docker-compose.yml           # Local PostgreSQL (port 5434)
 ├── recruitment-system/          # Spring Boot REST API
+│   ├── Dockerfile
+│   ├── .env.example             # Backend env template (copy to .env)
 │   ├── src/main/java/.../
-│   │   ├── controller/          # REST endpoints
-│   │   ├── service/             # Business logic
-│   │   ├── entity/              # JPA models
-│   │   ├── repository/          # Data access
-│   │   └── config/              # Security, CORS, seed data
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   └── config/              # Security, CORS, database, seed data
 │   └── src/main/resources/
 │       └── application.properties
-│
-└── recruitment-frontend/        # React SPA
-    ├── src/
-    │   ├── components/          # Shared UI (home, header, footer)
-    │   ├── pages/               # Applicant, HR, Admin, Auth routes
-    │   ├── layouts/             # Role-based layouts
-    │   ├── api/                 # Axios client
-    │   └── assets/              # Styles and images
-    └── package.json
+└── recruitment-frontend/          # React SPA
+    ├── .env.example             # Frontend env template (copy to .env)
+    ├── public/_redirects        # SPA routing on Render static sites
+    └── src/
+        ├── api/config.js        # API base URL (VITE_API_URL)
+        ├── components/
+        ├── pages/
+        └── layouts/
 ```
 
 ---
@@ -120,49 +123,92 @@ recruitment-system/
 - **Java 21**
 - **Maven 3.9+**
 - **Node.js 18+** and **npm**
-- **PostgreSQL 14+**
+- **Docker Desktop** (recommended for local PostgreSQL)
+- **PostgreSQL 14+** (optional if you use your own install instead of Docker)
 
 ---
 
-## Getting started
+## Environment setup
 
-### 1. Database
+Configuration lives in `.env` files — do not put secrets in `application.properties`.
 
-Create a PostgreSQL database:
+### Backend (`recruitment-system/`)
 
-```sql
-CREATE DATABASE recruitment_db;
+```bash
+cd recruitment-system
+copy .env.example .env    # Windows
+# cp .env.example .env    # macOS / Linux
 ```
 
-Update credentials in `recruitment-system/src/main/resources/application.properties` to match **your local** PostgreSQL setup:
+Default local values:
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/recruitment_db
-spring.datasource.username=postgres
-spring.datasource.password=your_password
+| Variable | Purpose |
+|----------|---------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5434/recruitment_db` |
+| `SPRING_DATASOURCE_USERNAME` | `postgres` |
+| `SPRING_DATASOURCE_PASSWORD` | `postgres` (match Docker or your local DB) |
+| `PORT` | `8080` |
+| `CORS_ALLOWED_ORIGINS` | Frontend URLs (comma-separated) |
+
+> **Important:** Put the host and database in the URL only — do **not** embed `user:password@` inside the JDBC URL. The backend parses Render-style `postgresql://` URLs automatically when deploying.
+
+### Frontend (`recruitment-frontend/`)
+
+```bash
+cd recruitment-frontend
+copy .env.example .env
 ```
 
-> **Security:** Use placeholders in documentation only. Set your real database password locally in `application.properties` and never commit secrets to Git. For production, use environment variables or a secrets manager instead of hard-coded values.
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_URL` | Backend URL, e.g. `http://localhost:8080` |
 
-Hibernate will create tables on first run (`spring.jpa.hibernate.ddl-auto=update`).
+`.env` files are gitignored. Only `.env.example` is committed.
+
+---
+
+## Getting started (local)
+
+### 1. Start PostgreSQL
+
+From the **repo root**:
+
+```bash
+docker compose up -d postgres
+```
+
+This starts PostgreSQL on **port 5434** (avoids conflicts with an existing install on 5432/5433).
+
+| Setting | Value |
+|---------|-------|
+| Host | `localhost` |
+| Port | `5434` |
+| Database | `recruitment_db` |
+| User | `postgres` |
+| Password | `postgres` |
+
+Hibernate creates tables on first run (`spring.jpa.hibernate.ddl-auto=update`).
+
+**Using your own PostgreSQL instead:** create `recruitment_db`, then update `SPRING_DATASOURCE_URL`, username, and password in `recruitment-system/.env`.
 
 ### 2. Backend
 
 ```bash
 cd recruitment-system
-./mvnw spring-boot:run
+mvnw.cmd spring-boot:run    # Windows
+# ./mvnw spring-boot:run    # macOS / Linux
 ```
 
-On Windows:
+API: **http://localhost:8080**
+
+On startup, the app seeds demo users, departments, and sample job vacancies when the database is empty.
+
+**Port 8080 already in use?**
 
 ```bash
-cd recruitment-system
-mvnw.cmd spring-boot:run
+netstat -ano | findstr ":8080"    # Windows
+taskkill /PID <pid> /F
 ```
-
-API base URL: **http://localhost:8080**
-
-On startup, the app seeds demo users, departments, and sample job vacancies (if the database is empty).
 
 ### 3. Frontend
 
@@ -172,16 +218,81 @@ npm install
 npm run dev
 ```
 
-App URL: **http://localhost:5173**
+App: **http://localhost:5173**
 
-For a production build:
+Production build:
 
 ```bash
 npm run build
-npm run preview    # serves dist/ on http://localhost:4173
+npm run preview    # http://localhost:4173
 ```
 
-The frontend expects the API at `http://localhost:8080` (configured in `src/api/axios.js`).
+---
+
+## Docker (backend image)
+
+Build the API image from `recruitment-system/`:
+
+```bash
+cd recruitment-system
+docker build -t recruitment-system .
+```
+
+Run locally (with Postgres already up):
+
+```bash
+docker run -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5434/recruitment_db \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=postgres \
+  recruitment-system
+```
+
+On Windows PowerShell, use `` ` `` instead of `\` for line breaks.
+
+---
+
+## Deploy on Render
+
+You need **three** resources: PostgreSQL, backend Web Service, frontend Static Site.
+
+### 1. PostgreSQL
+
+Create a **PostgreSQL** database on Render and note the connection details.
+
+### 2. Backend (Docker Web Service)
+
+| Setting | Value |
+|---------|-------|
+| Root directory | `recruitment-system` |
+| Runtime | Docker |
+
+**Environment variables:**
+
+| Key | Value |
+|-----|--------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://HOST:5432/DBNAME?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | From Render Postgres |
+| `SPRING_DATASOURCE_PASSWORD` | From Render Postgres |
+| `CORS_ALLOWED_ORIGINS` | `https://your-frontend.onrender.com` |
+
+Alternatively, link the database and set `DATABASE_URL` — the backend converts `postgresql://` URLs to JDBC automatically.
+
+### 3. Frontend (Static Site)
+
+| Setting | Value |
+|---------|-------|
+| Root directory | `recruitment-frontend` |
+| Build command | `npm install && npm run build` |
+| Publish directory | `dist` |
+
+**Environment variable:**
+
+| Key | Value |
+|-----|--------|
+| `VITE_API_URL` | `https://your-backend.onrender.com` (no trailing slash) |
+
+After deploy, set `CORS_ALLOWED_ORIGINS` on the backend to match the frontend URL exactly.
 
 ---
 
@@ -192,7 +303,7 @@ The frontend expects the API at `http://localhost:8080` (configured in `src/api/
 | HR | `hr@gmail.com` | `hr1234` |
 | Admin | `admin@gmail.com` | `admin1234` |
 
-Applicants can register at `/register` and choose the **Applicant** role.
+Applicants register at `/register` (Applicant role only). HR and Admin accounts are assigned via Admin → Users.
 
 ---
 
@@ -217,15 +328,13 @@ Applicants can register at `/register` and choose the **Applicant** role.
 
 ## Email notifications (optional)
 
-SMTP settings are commented out in `application.properties`. Uncomment and configure them to send real emails:
+Add SMTP variables to `recruitment-system/.env` or Render environment:
 
 ```properties
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your-email@gmail.com
-spring.mail.password=your-app-password
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
+SPRING_MAIL_HOST=smtp.gmail.com
+SPRING_MAIL_PORT=587
+SPRING_MAIL_USERNAME=your-email@gmail.com
+SPRING_MAIL_PASSWORD=your-app-password
 ```
 
 Without SMTP, notifications are still stored in the database and visible in the applicant dashboard.
@@ -234,10 +343,10 @@ Without SMTP, notifications are still stored in the database and visible in the 
 
 ## Development notes
 
-- **CORS** is enabled for local frontend development.
-- **File uploads** are stored under `recruitment-system/uploads/` (max 15 MB per file).
-- **Security:** API routes are open in development; authentication is handled at the application layer via login responses and frontend route guards.
-- After changing frontend assets or routes, run `npm run build` before `npm run preview`, then hard-refresh the browser (`Ctrl+Shift+R`).
+- **CORS** — configured via `CORS_ALLOWED_ORIGINS`; defaults allow `localhost` in development.
+- **File uploads** — stored under `recruitment-system/uploads/` (max 15 MB per file). On Render, disk is ephemeral unless you add persistent storage or external object storage.
+- **Security** — API routes are open in development; authentication is handled via login responses and frontend route guards.
+- **Frontend rebuild** — after asset or route changes, run `npm run build` before `npm run preview`, then hard-refresh (`Ctrl+Shift+R`).
 
 ---
 
